@@ -84,10 +84,11 @@ def test(path):
     boxes, blank_image = detect.precise_boxes(
         gray_details, blank_image, color=(0, 200, 100)
     )
-
-    cv2.imshow("detection", blank_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected.png"))
+    cv2.imwrite(save_image_path, blank_image)
+    # cv2.imshow("detection", blank_image)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
 
 test(example_image_path)

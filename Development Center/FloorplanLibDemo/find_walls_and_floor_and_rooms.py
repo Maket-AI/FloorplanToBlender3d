@@ -7,78 +7,71 @@ import cv2
 import numpy as np
 import sys
 import os
-
-floorplan_lib_path = os.path.dirname(os.path.realpath(__file__)) + "/../../"
-example_image_path = (
-    os.path.dirname(os.path.realpath(__file__)) + "/../../Images/Examples/example.png"
-)
-
-
+floorplan_lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 try:
     sys.path.insert(0, floorplan_lib_path)
     from FloorplanToBlenderLib import *  # floorplan to blender lib
 except ImportError:
     from FloorplanToBlenderLib import *  # floorplan to blender lib
-
 from subprocess import check_output
+# from FloorplanToBlenderLib import detect  # Assuming this import path is correct
 
 
-def test(path):
+def detect_floorplan_image(path, save_image_path):
     """
-    Receive image, convert
-    This function test functions used to create floor and walls
+    Process the floorplan image to detect walls, floors, and rooms,
+    and save the processed image to the specified path.
     """
     # Read floorplan image
+    print(f"open_iamge in {path}")
     img = cv2.imread(path)
-    # grayscale image
+    if img is None:
+        raise ValueError(f"Image not found at path: {path}")
+
+    # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Resulting image
     height, width, channels = img.shape
-    blank_image = np.zeros(
-        (height, width, 3), np.uint8
-    )  # output image same size as original
+    blank_image = np.zeros((height, width, 3), np.uint8)  # Output image
 
-    # create wall image (filter out small objects from image)
+    # Create wall image (filter out small objects from image)
     wall_img = detect.wall_filter(gray)
     wall_temp = wall_img
-    """
-    Detect Wall
-    """
-    # detect walls
+
+    # Detect walls
     boxes, img = detect.precise_boxes(wall_img, blank_image)
 
-    """
-    Detect Floor
-    """
-    # detect outer Contours (simple floor or roof solution)
+    # Detect outer contours (simple floor or roof solution)
     contour, img = detect.outer_contours(gray, blank_image, color=(255, 0, 0))
 
-    # grayscale
+    # Invert wall image for room detection
     gray = ~wall_temp
 
-    """
-    Detect rooms
-    """
+    # Detect rooms
     rooms, colored_rooms = detect.find_rooms(gray.copy())
-
     gray_rooms = cv2.cvtColor(colored_rooms, cv2.COLOR_BGR2GRAY)
     boxes, blank_image = detect.precise_boxes(
         gray_rooms, blank_image, color=(0, 100, 200)
     )
 
-    """
-    Detect details
-    """
+    # Detect details
     doors, colored_doors = detect.find_details(gray.copy())
     gray_details = cv2.cvtColor(colored_doors, cv2.COLOR_BGR2GRAY)
     boxes, blank_image = detect.precise_boxes(
         gray_details, blank_image, color=(0, 200, 100)
     )
 
-    cv2.imshow("detection", blank_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # Save the processed image
+    cv2.imwrite(save_image_path, blank_image)
+    print(f"Processed image saved as {save_image_path}")
 
 
-test(example_image_path)
+# Set the paths
+
+image_names = ["test (1).jpg", "test (1).png", "test (2).jpg", "test (2).png", "test (3).jpg"]
+for image_name in image_names:
+    input_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), image_name))
+    save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_{image_name}"))
+    # Call the processing function
+    detect_floorplan_image(input_image_path, save_image_path)

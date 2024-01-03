@@ -108,6 +108,7 @@ celerybeat-schedule
 # Environments
 .env
 .venv
+detector/
 env/
 venv/
 ENV/

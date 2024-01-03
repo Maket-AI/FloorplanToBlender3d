@@ -41,12 +41,19 @@ def detect_windows_and_doors_boxes(img, door_list):
     # get box positions for rooms
     boxes, gray_rooms = detect.precise_boxes(gray_rooms, blank_image)
 
-    cv2.imshow("input", img)
-    cv2.imshow("doors and windows", gray_rooms)
-    cv2.imshow("colored", colored_doors)
-    cv2.waitKey(0)
+    # cv2.imshow("input", img)
+    # cv2.imshow("doors and windows", gray_rooms)
+    # cv2.imshow("colored", colored_doors)
+    # cv2.waitKey(0)
 
+    save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_input.png"))
+    cv2.imwrite(save_image_path, img)
+    save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_gray_rooms.png"))
+    cv2.imwrite(save_image_path, gray_rooms)
+    save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_colored_doors.png"))
+    cv2.imwrite(save_image_path, colored_doors)
     classified_boxes = []
+
     # classify boxes
     # window, door, none
     for box in boxes:
@@ -98,8 +105,10 @@ def detect_windows_and_doors_boxes(img, door_list):
             end = (x + w, y + h)
             img = cv2.line(img, start, end, (0, 255, 0), 5)
 
-    cv2.imshow("Final result", img)
-    cv2.waitKey(0)
+    save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_door.png"))
+    cv2.imwrite(save_image_path, img)
+    # cv2.imshow("Final result", img)
+    # cv2.waitKey(0)
 
 
 def points_are_inside_or_close_to_box(door, box):
@@ -153,8 +162,10 @@ def feature_detect(img):
 
     # draw only keypoints location,not size and orientation
     img2 = cv2.drawKeypoints(img, kp, img, color=(0, 255, 0), flags=0)
-    cv2.imshow("keypoints", img2)
-    cv2.waitKey(0)
+    # cv2.imshow("keypoints", img2)
+    # cv2.waitKey(0)
+    save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_keypoints.png"))
+    cv2.imwrite(save_image_path, img2)
 
 
 def feature_match(img1, img2):
@@ -390,9 +401,10 @@ def feature_match(img1, img2):
             model, kp_model, cap, kp_frame, matches[:MIN_MATCHES], 0, flags=2
         )
         # show result
-        cv2.imshow("frame", cap)
-        cv2.waitKey(0)
-
+        # cv2.imshow("frame", cap)
+        # cv2.waitKey(0)
+        save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_frame.png"))
+        cv2.imwrite(save_image_path, cap)
     else:
         print(
             "Not enough matches have been found - %d/%d" % (len(matches), MIN_MATCHES)
