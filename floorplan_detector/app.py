@@ -15,6 +15,7 @@ except ImportError:
     from FloorplanToBlenderLib import *  # floorplan to blender lib
 from subprocess import check_output
 
+
 def local_test():
     print(floorplan_lib_path)
 
@@ -57,7 +58,6 @@ def lambda_handler(event, context):
         save_image_path = os.path.join("/tmp", f"detected_{os.path.basename(s3_key)}")
         lambda_client = boto3.client("lambda")
         response = detect_floorplan_image(input_image_path, save_image_path, lambda_client)
-
         # (Optionally) Upload the processed image back to S3
 
     # (Optional) Delete the temporary file
@@ -65,10 +65,10 @@ def lambda_handler(event, context):
 
     return response
 
-# Rest of the functions as previously defined
 
 if __name__ == "__main__":
     event = {
         "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/floorplan_google1.png"
     }
-    lambda_handler(event, "")
+    response = lambda_handler(event, "")
+    print(f"final response:{response}")

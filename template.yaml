@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Lambda application that uses a container image.
+
+Resources:
+  FloorplanDetectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      ImageUri: 898603082442.dkr.ecr.ca-central-1.amazonaws.com/floorplan_detector:v2
+      MemorySize: 1024
+      Timeout: 30
+      Events:
+        # Define triggers, like an S3 event or an API Gateway endpoint
+        # Example for an HTTP API endpoint:
+        HttpApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /detect
+            Method: post
+

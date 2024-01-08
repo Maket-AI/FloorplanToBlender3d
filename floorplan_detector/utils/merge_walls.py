@@ -1,10 +1,8 @@
-import cv2
 import numpy as np
 from shapely.geometry import Polygon, MultiPolygon
-# from shapely.ops import unary_union, nearest_points
-import matplotlib.pyplot as plt
 
 
+# Function to create bounding boxes that are aligned with the axis
 def create_bounding_boxes_for_rooms(room_contours, outer_contour):
     outer_polygon = Polygon(outer_contour)
     updated_room_contours = []
@@ -33,6 +31,7 @@ def dilate_and_intersect_with_outer(room_contours, outer_contour, expansion_pixe
 
     return dilated_room_contours
 
+
 # Function to compute minimum distance between non-adjacent room polygons to estimate wall thickness
 def estimate_wall_thickness(room_polygons):
     min_distance = float('inf')
@@ -43,6 +42,7 @@ def estimate_wall_thickness(room_polygons):
                 if distance > 0:
                     min_distance = min(min_distance, distance)
     return min_distance / 2
+
 
 # Function to adjust corners of the polygons to merge walls
 def adjust_corners(poly1, poly2, threshold):
@@ -67,6 +67,7 @@ def adjust_corners(poly1, poly2, threshold):
     else:
         return poly1, poly2
 
+
 # Function to merge all walls between rooms
 def merge_walls(room_contours, threshold):
     rooms = [Polygon(room) for room in room_contours]
@@ -74,17 +75,6 @@ def merge_walls(room_contours, threshold):
         for j in range(i + 1, len(rooms)):
             rooms[i], rooms[j] = adjust_corners(rooms[i], rooms[j], threshold)
     return rooms
-
-# Plotting function
-def plot(polygons, outer_polygon):
-    fig, ax = plt.subplots()
-    for polygon in polygons:
-        x, y = polygon.exterior.xy
-        ax.plot(x, y, color='blue', linewidth=2)
-    x, y = outer_polygon.exterior.xy
-    ax.plot(x, y, color='red', linewidth=2)
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.show()
 
 
 def inflate_rooms(room_polygons, outer_polygon, wall_thickness):

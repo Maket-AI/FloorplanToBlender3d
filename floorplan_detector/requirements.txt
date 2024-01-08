@@ -1,0 +1,13 @@
+opencv-python
+numpy
+configparser==3.5.0
+future-fstrings==1.2.0
+requests==2.25.1
+pyfiglet==0.7
+setuptools==54.1.0
+scipy==1.5.4
+pillow==9.0.1
+matplotlib==3.5.1
+black==22.1.0
+shapely
+boto3
