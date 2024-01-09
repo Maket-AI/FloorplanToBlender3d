@@ -26,9 +26,6 @@ jobs:
       - name: Build application
         run: sam build
       # Deploy the application using samconfig.toml parameters in prod env
-      # - name: Deploy detector on master
-      #   if: github.ref == 'refs/heads/master'
-      #   run: sam deploy --stack-name floorplan-detector
       - name: Deploy detector on master
         if: github.ref == 'refs/heads/master'
         run: sam deploy --stack-name floorplan-detector --resolve-image-repos
