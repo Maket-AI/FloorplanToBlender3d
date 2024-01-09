@@ -30,3 +30,4 @@ jobs:
         # Main branch only
         if: github.ref == 'refs/heads/master'
         run: sam deploy --config-env master
+
