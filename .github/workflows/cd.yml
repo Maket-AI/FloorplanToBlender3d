@@ -29,6 +29,6 @@ jobs:
       - name: Deploy detector on master
         # Main branch only
         if: github.ref == 'refs/heads/master'
-        run: sam deploy --stack-name floorplan-detector --image-repositories FloorplanDetectorFunction=898603082442.dkr.ecr.ca-central-1.amazonaws.com/floorplan_detector
+        run: sam deploy --stack-name floorplan-detector --resolve-image-repos
 
 
