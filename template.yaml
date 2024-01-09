@@ -7,7 +7,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: 898603082442.dkr.ecr.ca-central-1.amazonaws.com/floorplan_detector
+      # ImageUri: 898603082442.dkr.ecr.ca-central-1.amazonaws.com/floorplan_detector
       MemorySize: 1024
       Timeout: 30
       Events:
