@@ -1,27 +1,6 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
-Description: An AWS Lambda application that uses a container image.
-
-Resources:
-  FloorplanDetectorFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      PackageType: Image
-      ImageUri: 898603082442.dkr.ecr.ca-central-1.amazonaws.com/floorplan_detector
-      MemorySize: 1024
-      Timeout: 30
-      Events:
-        # Define triggers, like an S3 event or an API Gateway endpoint
-        # Example for an HTTP API endpoint:
-        HttpApiEvent:
-          Type: HttpApi
-          Properties:
-            Path: /detect
-            Method: post
-
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: An asynchronous processing setup using DynamoDB and Lambda
+Description: An AWS Lambda application with API Gateway
 
 Parameters:
   Stage:
@@ -39,20 +18,33 @@ Globals:
 
 Resources:
   FloorplanDetectorFunction:
-      Type: AWS::Serverless::Function
-      Properties:
-        PackageType: Image
-      Metadata:
-        Dockerfile: floorplan_detector/Dockerfile
-        DockerContext: .  # Change to the root directory
-        DockerTag: latest
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      MemorySize: 1024
+      Timeout: 30
+      Events:
+        HttpApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /detect
+            Method: post
+            RestApiId: !Ref MyApi
+    Metadata:
+      Dockerfile: floorplan_detector/Dockerfile
+      DockerContext: .  # Root directory of the project
+      DockerTag: latest
 
-  
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
 
 Outputs:
   ApiURL:
     Description: "URL for our API Gateway"
     Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
-  FloorplanDetectorFunction:
-    Description: "Floorplan Detector Function ARN"
+
+  FloorplanDetectorFunctionArn:
+    Description: "ARN of the Floorplan Detector Function"
     Value: !GetAtt FloorplanDetectorFunction.Arn
