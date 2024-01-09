@@ -3,7 +3,7 @@ name: CD
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   cd:
@@ -28,5 +28,5 @@ jobs:
       # Deploy the application using samconfig.toml parameters in prod env
       - name: Deploy application on Prod stack
         # Main branch only
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master'
         run: sam deploy --config-env prod
