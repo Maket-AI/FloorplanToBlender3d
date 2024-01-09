@@ -43,8 +43,8 @@ Resources:
       Properties:
         PackageType: Image
       Metadata:
-        Dockerfile: Dockerfile
-        DockerContext: ./floorplan_detector
+        Dockerfile: floorplan_detector/Dockerfile
+        DockerContext: .  # Change to the root directory
         DockerTag: latest
 
   
