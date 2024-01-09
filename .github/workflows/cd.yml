@@ -26,9 +26,16 @@ jobs:
       - name: Build application
         run: sam build
       # Deploy the application using samconfig.toml parameters in prod env
+      # - name: Deploy detector on master
+      #   if: github.ref == 'refs/heads/master'
+      #   run: sam deploy --stack-name floorplan-detector
       - name: Deploy detector on master
         if: github.ref == 'refs/heads/master'
-        run: sam deploy --stack-name floorplan-detector
+        run: >
+          sam deploy
+          --stack-name floorplan-detector
+          --image-repositories FloorplanDetectorFunction=898603082442.dkr.ecr.ca-central-1.amazonaws.com/floorplan_detector
+    
       
 
 
