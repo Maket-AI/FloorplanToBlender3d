@@ -82,6 +82,7 @@ def largest_inscribed_rectangle_in_multipolygon(multi_polygon):
 
     return best_rectangle, max_area
 
+
 def largest_inscribed_rectangle(polygon):
     """
     Find the largest inscribed rectangle within a given polygon. Not consider the polygon with the hole
@@ -171,7 +172,7 @@ def split_to_rectangulars(input_data):
                     if largest_rect is None or largest_area < 0.1 * area:
                         break
                     min_rotated_rect = largest_rect.minimum_rotated_rectangle
-                    print(min_rotated_rect, list(min_rotated_rect.exterior.coords))
+                    # print(min_rotated_rect, list(min_rotated_rect.exterior.coords))
                     # Add the largest rectangle as a new 'corridor'
                     new_plans.append({
                         'corners': [list(coord) for coord in min_rotated_rect.exterior.coords],
@@ -189,6 +190,28 @@ def split_to_rectangulars(input_data):
     input_data['data']['plans'] = [new_plans]
     return input_data
 
+
+def check_if_rectilinear(polygon, label):
+    centroid = polygon.centroid
+    edges = list(zip(polygon.exterior.coords[:-1], polygon.exterior.coords[1:]))
+
+    def classify_edge(edge):
+        (x1, y1), (x2, y2) = edge
+        if x1 == x2:  # Vertical edge
+            return "r" if x1 > centroid.x else "l"
+        elif y1 == y2:  # Horizontal edge
+            return "u" if y1 > centroid.y else "d"
+        else:
+            # Non-rectilinear, return minimum rotated rectangle
+            print(f"Non-rectilinear polygon adjusted for room: {label}, {polygon}")
+            return polygon.minimum_rotated_rectangle
+
+    for edge in edges:
+        result = classify_edge(edge)
+        if isinstance(result, Polygon):
+            return result  # Non-rectilinear case
+
+    return polygon  # Rectilinear case
 
 
 def align_rooms_to_grid(input_data, grid_unit=1):
@@ -223,6 +246,7 @@ def align_rooms_to_grid(input_data, grid_unit=1):
             if "corners" in shape:
                 shape_poly = Polygon(shape["corners"])
                 snapped_poly = snap_polygon(shape_poly, grid_unit)
+                snapped_poly = check_if_rectilinear(snapped_poly, shape['type'])
                 shape['corners'] = [list(coord) for coord in snapped_poly.exterior.coords]
                 shape['width'] = snapped_poly.bounds[2] - snapped_poly.bounds[0]
                 shape['height'] = snapped_poly.bounds[3] - snapped_poly.bounds[1]
@@ -231,9 +255,9 @@ def align_rooms_to_grid(input_data, grid_unit=1):
 
 
 def rectangularized(input_data):
-    # approximate rectangular with overlapped; then remove overlap, shape may polygon.
+    # approximate rectangular with overlapped; then remove overlap, shape may not be rectangulars.
     data_with_polygon = transform_rectilinear(input_data)
-    # break into rectangulars from a non-rectangular polygon
+    # break into rectangulars rooms from a non-rectangular polygon room
     data_transformed_copy = copy.deepcopy(data_with_polygon)
     data_transformed_rect = split_to_rectangulars(data_transformed_copy)
     # merge small gaps by grid

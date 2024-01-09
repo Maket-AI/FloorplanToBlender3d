@@ -1,0 +1,32 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  cd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: aws-actions/setup-sam@v1
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          #TODO: Check if those secrets are working to execute the sam cmds
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ca-central-1
+      # Sam cmds for QA, buil and deploy
+      # Check problems in template.yml
+      - name: Test template
+        run: sam validate
+      # Build the image with template.yml and samconfig.toml
+      - name: Build application
+        run: sam build
+      # Deploy the application using samconfig.toml parameters in prod env
+      - name: Deploy application on Prod stack
+        # Main branch only
+        if: github.ref == 'refs/heads/main'
+        run: sam deploy --config-env prod

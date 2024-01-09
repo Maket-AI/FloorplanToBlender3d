@@ -68,7 +68,7 @@ def lambda_handler(event, context):
 
 if __name__ == "__main__":
     event = {
-        "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/floorplan_google1.png"
+        "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/floorplan_google2.jpg"
     }
     response = lambda_handler(event, "")
-    print(f"final response:{response}")
+    print(f"final response:{response['path']}")

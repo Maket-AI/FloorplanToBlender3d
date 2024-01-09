@@ -127,7 +127,6 @@ def detect_floorplan_image(path, save_image_path, lambda_client):
     merged_rooms = merge_wall_processing(outer_contour_corners, room_corners)
     data_for_payload = prase_json_to_visualizer(merged_rooms)
     data_for_payload = rectangularized(data_for_payload)
-    print(data_for_payload)
     lambda_response = call_visualizer(data_for_payload, lambda_client)
     # Return the same structure as the Lambda function
     return lambda_response
