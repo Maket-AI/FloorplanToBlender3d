@@ -1,26 +1,20 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: Floorplan Detector Lambda Function
 
-Resources:
-  MyApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: prod  # Custom stage name set to 'prod'
+Globals:
+  Function:
+    Timeout: 120
+    MemorySize: 3008
+    Tracing: Active
 
+Resources:
   FloorplanDetectorFunction:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
       MemorySize: 1024
       Timeout: 30
-      Events:
-        HttpApiEvent:
-          Type: HttpApi
-          Properties:
-            Path: /detect
-            Method: post
-            RestApiId: !Ref MyApi
     Metadata:
       Dockerfile: floorplan_detector/Dockerfile
       DockerContext: .  # Root directory of the project
@@ -30,7 +24,3 @@ Outputs:
   FloorplanDetectorFunctionArn:
     Description: "ARN of the Floorplan Detector Function"
     Value: !GetAtt FloorplanDetectorFunction.Arn
-
-  ApiURL:
-    Description: "URL for the API Gateway"
-    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
