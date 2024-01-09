@@ -1,20 +1,12 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: An AWS Lambda application with API Gateway
-
-Parameters:
-  Stage:
-    Type: String
-    Description: The name of the API Gateway stage.
-    Default: myStage
+Description: Floorplan Detector Lambda Function
 
 Globals:
   Function:
     Timeout: 120
     MemorySize: 3008
     Tracing: Active
-  Api:
-    TracingEnabled: True
 
 Resources:
   FloorplanDetectorFunction:
@@ -23,28 +15,12 @@ Resources:
       PackageType: Image
       MemorySize: 1024
       Timeout: 30
-      Events:
-        HttpApiEvent:
-          Type: HttpApi
-          Properties:
-            Path: /detect
-            Method: post
-            RestApiId: !Ref MyApi
     Metadata:
       Dockerfile: floorplan_detector/Dockerfile
       DockerContext: .  # Root directory of the project
       DockerTag: latest
 
-  MyApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: !Ref Stage
-
 Outputs:
-  ApiURL:
-    Description: "URL for our API Gateway"
-    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
-
   FloorplanDetectorFunctionArn:
     Description: "ARN of the Floorplan Detector Function"
     Value: !GetAtt FloorplanDetectorFunction.Arn
