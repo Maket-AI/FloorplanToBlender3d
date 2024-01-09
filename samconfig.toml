@@ -5,4 +5,3 @@ stack_name = "floorplan-detector"
 region = "ca-central-1"
 parameter_overrides = "Stage=Prod"
 capabilities = "CAPABILITY_IAM"
-image_repositories = ["FloorplanDetectorFunction=898603082442.dkr.ecr.ca-central-1.amazonaws.com/floorplan_detector"]
