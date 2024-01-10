@@ -29,6 +29,11 @@ def local_test():
 
 def lambda_handler(event, context):
     # Extract the URL from the event
+    print(f"event:{event}")
+    if 'body' in event:
+        body = json.loads(event['body'])
+        image_url = body.get('image_url', '')
+        print(f"body: {body} and url {image_url}")
     image_url = event['image_url']
     parsed_url = urlparse(image_url)
     # Validate the URL
@@ -71,7 +76,7 @@ def lambda_handler(event, context):
 
 if __name__ == "__main__":
     event = {
-        "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/test_6.jpeg"
+        "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/test_2.png"
     }
     response = lambda_handler(event, "")
     print(f"final response:{response['paths']}")
