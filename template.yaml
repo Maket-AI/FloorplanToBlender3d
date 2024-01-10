@@ -15,12 +15,41 @@ Resources:
       PackageType: Image
       MemorySize: 1024
       Timeout: 30
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /detect
+            Method: post
+            RestApiId:
+              Ref: MyApi
     Metadata:
       Dockerfile: floorplan_detector/Dockerfile
       DockerContext: .  # Root directory of the project
       DockerTag: latest
 
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: FloorplanDetectorApi
+        paths:
+          /detect:
+            post:
+              x-amazon-apigateway-integration:
+                uri:
+                  Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FloorplanDetectorFunction.Arn}/invocations
+                httpMethod: POST
+                type: aws_proxy
+
 Outputs:
   FloorplanDetectorFunctionArn:
     Description: "ARN of the Floorplan Detector Function"
     Value: !GetAtt FloorplanDetectorFunction.Arn
+
+  ApiUrl:
+    Description: "API endpoint URL"
+    Value: !Sub "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/prod"

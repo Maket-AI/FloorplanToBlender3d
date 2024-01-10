@@ -114,6 +114,6 @@ def merge_wall_processing(outer_contour_corners, room_corners):
     non_overlapping_room_polygons = inflate_rooms(room_polygons, outer_contour_polygon, wall_thickness)
 
     # Merge walls by adjusting corners
-    threshold = 0.5  # Set a threshold for how close corners should be to think them for merging
+    threshold = 0.5  # Set a threshold for how close corners should be to considered them for merging
     merged_rooms = merge_walls([r.exterior.coords for r in non_overlapping_room_polygons], threshold)
     return merged_rooms

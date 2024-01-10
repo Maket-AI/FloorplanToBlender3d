@@ -56,19 +56,22 @@ def lambda_handler(event, context):
         # Process the downloaded image
         input_image_path = temp_file.name
         save_image_path = os.path.join("/tmp", f"detected_{os.path.basename(s3_key)}")
+        save_image_key = os.path.join(os.path.dirname(s3_key), f"detected_{os.path.basename(s3_key)}")
         lambda_client = boto3.client("lambda")
         response = detect_floorplan_image(input_image_path, save_image_path, lambda_client)
-        # (Optionally) Upload the processed image back to S3
+        # (Optionally) Upload the middle processed image back to S3
+        try:
+            s3_client.upload_file(save_image_path, bucket_name, save_image_key)
+        except Exception as e:
+            print(f"Unable to upload the file to S3: {e}")
 
-    # (Optional) Delete the temporary file
     os.unlink(temp_file.name)
-
     return response
 
 
 if __name__ == "__main__":
     event = {
-        "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/floorplan_google2.jpg"
+        "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/test_6.jpeg"
     }
     response = lambda_handler(event, "")
-    print(f"final response:{response['path']}")
+    print(f"final response:{response['paths']}")
