@@ -28,50 +28,63 @@ def local_test():
 
 
 def lambda_handler(event, context):
-    # Extract the URL from the event
-    print(f"event:{event}")
+    print(f"Event: {event}")
+
+    # Check if the function is invoked via API Gateway or directly
     if 'body' in event:
+        # If invoked via API Gateway
         body = json.loads(event['body'])
         image_url = body.get('image_url', '')
-        print(f"body: {body} and url {image_url}")
-    image_url = event['image_url']
+    else:
+        # If invoked directly
+        image_url = event.get('image_url', '')
+
+    if not image_url:
+        print("No image_url provided")
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"message": "Missing image_url"})
+        }
+
     parsed_url = urlparse(image_url)
     # Validate the URL
     if not parsed_url.netloc or not parsed_url.path:
-        raise ValueError("Invalid URL in the event")
-    # Extract the object key from the URL
+        print("Invalid URL provided")
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"message": "Invalid URL"})
+        }
+
     s3_key = unquote(parsed_url.path.lstrip('/'))
-    # Known bucket name
     bucket_name = 'floorplan-detector'
-    # Initialize S3 client
     s3_client = boto3.client('s3')
 
-    # Create a temporary file to store the downloaded image
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
         try:
-            # Download the image from S3 to the temp file
             s3_client.download_file(bucket_name, s3_key, temp_file.name)
         except Exception as e:
-            print(f"Unable to download the file from S3: {e}")
+            print(f"Error downloading from S3: {e}")
             return {
                 "statusCode": 500,
                 "body": json.dumps({"message": "Error downloading file from S3"})
             }
 
-        # Process the downloaded image
         input_image_path = temp_file.name
         save_image_path = os.path.join("/tmp", f"detected_{os.path.basename(s3_key)}")
         save_image_key = os.path.join(os.path.dirname(s3_key), f"detected_{os.path.basename(s3_key)}")
+
+        # Process the image and get the response
         lambda_client = boto3.client("lambda")
         response = detect_floorplan_image(input_image_path, save_image_path, lambda_client)
-        # (Optionally) Upload the middle processed image back to S3
+        # Upload the processed image back to S3
         try:
             s3_client.upload_file(save_image_path, bucket_name, save_image_key)
         except Exception as e:
-            print(f"Unable to upload the file to S3: {e}")
+            print(f"Error uploading to S3: {e}")
 
     os.unlink(temp_file.name)
-    return response
+    return {"statusCode": 200, "body": json.dumps({"response": response})}
+
 
 
 if __name__ == "__main__":
@@ -79,4 +92,4 @@ if __name__ == "__main__":
         "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/test_2.png"
     }
     response = lambda_handler(event, "")
-    print(f"final response:{response['paths']}")
+    # print(f"final response:{response}")
