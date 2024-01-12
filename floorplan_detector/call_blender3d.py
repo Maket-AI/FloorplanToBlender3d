@@ -58,6 +58,7 @@ def norm_blender3d(path, save_image_path):
         raise ValueError(f"Image not found at path: {path}")
 
     # Convert to grayscale
+    img = cv2.flip(img, 0)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Resulting image
@@ -84,9 +85,11 @@ def norm_blender3d(path, save_image_path):
     rooms, colored_rooms = detect.find_rooms(gray.copy())
 
     gray_rooms = cv2.cvtColor(colored_rooms, cv2.COLOR_BGR2GRAY)
+    cv2.imwrite("./gray_rooms.png", gray_rooms)
     boxes, blank_image = detect.precise_boxes(
         gray_rooms, blank_image, color=(255, 215, 0)
     ) 
+    cv2.imwrite("./blank_image.png", blank_image)
     # Save the processed image
     cv2.imwrite(save_image_path, blank_image)
     print(f"Processed image saved as {save_image_path}")

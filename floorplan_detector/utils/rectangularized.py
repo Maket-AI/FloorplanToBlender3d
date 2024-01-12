@@ -214,7 +214,7 @@ def check_if_rectilinear(polygon, label):
     return polygon  # Rectilinear case
 
 
-def align_rooms_to_grid(input_data, grid_unit=1):
+def align_rooms_to_grid(input_data, grid_unit=2):
     """
     Snap the coordinates of rectangles and polygons to a specified grid.
 

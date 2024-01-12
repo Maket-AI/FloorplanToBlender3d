@@ -92,4 +92,4 @@ if __name__ == "__main__":
         "image_url": "https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/test_2.png"
     }
     response = lambda_handler(event, "")
-    # print(f"final response:{response}")
+    print(f"final response:{response}")
