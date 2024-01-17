@@ -1,6 +1,6 @@
 import numpy as np
-from shapely.geometry import Polygon, MultiPolygon
-
+from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+from shapely.validation import explain_validity
 
 # Function to create bounding boxes that are aligned with the axis
 def create_bounding_boxes_for_rooms(room_contours, outer_contour):
@@ -76,31 +76,36 @@ def merge_walls(room_contours, threshold):
             rooms[i], rooms[j] = adjust_corners(rooms[i], rooms[j], threshold)
     return rooms
 
-
 def inflate_rooms(room_polygons, outer_polygon, wall_thickness):
+    if np.isinf(wall_thickness):
+        wall_thickness = 1  # Assign a default value of 1
+
     inflated_rooms = []
     for room in room_polygons:
+        # Repair geometry if it's invalid
+        if not room.is_valid:
+            print(f"Invalid geometry detected: {explain_validity(room)}")
+            room = room.buffer(0)  # Common technique to fix minor geometric issues
+
         # Inflate the room
         inflated_room = room.buffer(wall_thickness, cap_style=2, join_style=2)
+
+        # Check and repair inflated room if invalid
+        if not inflated_room.is_valid:
+            print(f"Invalid geometry after buffering: {explain_validity(inflated_room)}")
+            inflated_room = inflated_room.buffer(0)
+
         # Intersect with the outer contour to ensure it remains within the building
-        inflated_room = inflated_room.intersection(outer_polygon)
-        inflated_rooms.append(inflated_room)
+        try:
+            intersection_polygon = inflated_room.intersection(outer_polygon)
+            if not intersection_polygon.is_empty:
+                if isinstance(intersection_polygon, MultiPolygon):
+                    intersection_polygon = max(intersection_polygon, key=lambda p: p.area)
+                inflated_rooms.append(intersection_polygon)
+        except Exception as e:
+            print(f"Error during intersection: {e}")
 
-    # Now ensure that the inflated rooms do not overlap with each other
-    non_overlapping_rooms = []
-    for i, room in enumerate(inflated_rooms):
-        # Start with the current inflated room
-        current_room = room
-        # Subtract the area of all other inflated rooms
-        for j, other_room in enumerate(inflated_rooms):
-            if i != j:
-                current_room = current_room.difference(other_room)
-        # Ensure the result is a polygon, and use the largest polygon if it's a MultiPolygon
-        if isinstance(current_room, MultiPolygon):
-            current_room = max(current_room, key=lambda p: p.area)
-        non_overlapping_rooms.append(current_room)
-
-    return non_overlapping_rooms
+    return inflated_rooms
 
 
 def merge_wall_processing(outer_contour_corners, room_corners):
@@ -109,11 +114,28 @@ def merge_wall_processing(outer_contour_corners, room_corners):
     outer_contour_polygon = Polygon(outer_contour_corners)
     # Estimate the wall thickness
     wall_thickness = estimate_wall_thickness(room_polygons)
+    print(f"wall_thickness {wall_thickness}")
 
     # Inflate the rooms without them overlapping each other
     non_overlapping_room_polygons = inflate_rooms(room_polygons, outer_contour_polygon, wall_thickness)
 
+    # # Merge walls by adjusting corners
+    # threshold = 0.5  # Set a threshold for how close corners should be to considered them for merging
+    # merged_rooms = merge_walls([r.exterior.coords for r in non_overlapping_room_polygons], threshold)
+
+    valid_polygons = []
+    print(f"non_overlapping_room_polygons {non_overlapping_room_polygons}")
+    # Filter out only Polygon and MultiPolygon objects
+    for geom in non_overlapping_room_polygons:
+        if isinstance(geom, (Polygon, MultiPolygon)):
+            valid_polygons.append(geom)
+        elif isinstance(geom, GeometryCollection):
+            # Handle GeometryCollection, extract only Polygon and MultiPolygon parts
+            valid_parts = [part for part in geom.geoms if isinstance(part, (Polygon, MultiPolygon))]
+            valid_polygons.extend(valid_parts)
+
     # Merge walls by adjusting corners
     threshold = 0.5  # Set a threshold for how close corners should be to considered them for merging
-    merged_rooms = merge_walls([r.exterior.coords for r in non_overlapping_room_polygons], threshold)
+    merged_rooms = merge_walls([r.exterior.coords for r in valid_polygons], threshold)
+
     return merged_rooms

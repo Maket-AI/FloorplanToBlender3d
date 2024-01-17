@@ -23,8 +23,15 @@ def transform_rectilinear(json_structure):
             "corners": rectilinear_corners
         })
 
-    # Function to resolve individual overlaps
     def resolve_overlap(poly1, poly2):
+        # Check and handle MultiPolygon for poly1
+        if isinstance(poly1, MultiPolygon):
+            poly1 = max(poly1.geoms, key=lambda p: p.area)
+
+        # Check and handle MultiPolygon for poly2
+        if isinstance(poly2, MultiPolygon):
+            poly2 = max(poly2.geoms, key=lambda p: p.area)
+
         if poly1.contains(poly2):
             return poly1.difference(poly2), poly2
         elif poly1.intersects(poly2):
@@ -53,7 +60,7 @@ def transform_rectilinear(json_structure):
 
     # Resolve the overlaps
     resolved_polygons = resolve_overlaps(rectilinear_rooms)
-
+    print(f"resolved_polygon_type: {type(resolved_polygons)}")
     # Constructing the transformed data
     transformed_data = json_structure.copy()
     for i, poly in enumerate(resolved_polygons):

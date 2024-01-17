@@ -123,6 +123,7 @@ def detect_floorplan_image(path, save_image_path, lambda_client):
     print(f"open_iamge in {path}")
     # detect room contour by Blender3D API.
     outer_contour_corners, room_corners = norm_blender3d(path, save_image_path)
+    print(f"outer_contour_corners{outer_contour_corners}")
     # Merge the wall gaps (output: non-rectangular, rooms not glued)
     merged_rooms = merge_wall_processing(outer_contour_corners, room_corners)
     data_for_payload = prase_json_to_visualizer(merged_rooms)
