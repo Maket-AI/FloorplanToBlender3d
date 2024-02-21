@@ -68,11 +68,65 @@ def highlight_walls(gray_image):
     return gray_image
 
 
+def detect_and_mask_windows_and_doors_boxes(img):
+    height, width, channel = img.shape
+    blank_image = np.zeros(
+        (height, width, 3), np.uint8
+    )  # output image same size as original
+
+    # grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = detect.wall_filter(gray)
+    gray = ~gray
+    doors, colored_doors = detect.find_details(img=gray.copy(), room_closing_max_length = 200)
+    def adjust_and_filter_doors(doors):
+        adjusted_doors = []
+        for door_mask in doors:
+            # Find the bounding box of the door
+            rows, cols = np.where(door_mask)
+            if rows.size == 0 or cols.size == 0:  # Skip if the mask is empty
+                continue
+            min_row, max_row = np.min(rows), np.max(rows)
+            min_col, max_col = np.min(cols), np.max(cols)
+            
+            # Calculate the height and width of the bounding box
+            height = max_row - min_row
+            width = max_col - min_col
+            
+            # Increase the bounding box by 10% on each side
+            increase_height = int(height * 0.1)
+            increase_width = int(width * 0.1)
+            min_row = max(0, min_row - increase_height)
+            max_row = min(door_mask.shape[0], max_row + increase_height)
+            min_col = max(0, min_col - increase_width)
+            max_col = min(door_mask.shape[1], max_col + increase_width)
+            
+            # Check the aspect ratio
+            aspect_ratio = max(height, width) / max(min(height, width), 1)  # Avoid division by zero
+            if aspect_ratio < 4:  # If the aspect ratio is less than 4:1, it's not considered a door
+                continue
+            
+            # Create an adjusted mask for the door
+            adjusted_mask = np.zeros_like(door_mask)
+            adjusted_mask[min_row:max_row, min_col:max_col] = True
+            adjusted_doors.append(adjusted_mask)
+        
+        return adjusted_doors
+    adjusted_doors = adjust_and_filter_doors(doors)
+
+    # Apply the adjusted door masks to the image
+    for door_mask in adjusted_doors:
+        img[door_mask] = (0, 0, 0)  # Black out the door areas
+    cv2.imwrite("./masked_door.png", img)
+    return img
+
+
 def norm_blender3d(path, save_image_path):
     img = cv2.imread(path)
     if img is None:
         raise ValueError(f"Image not found at path: {path}")
-
+    # Replace the windows by solid wall
+    img = detect_and_mask_windows_and_doors_boxes(img)
     # Convert to grayscale
     img = cv2.flip(img, 0)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)

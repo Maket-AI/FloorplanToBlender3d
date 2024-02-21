@@ -76,36 +76,36 @@ def merge_walls(room_contours, threshold):
             rooms[i], rooms[j] = adjust_corners(rooms[i], rooms[j], threshold)
     return rooms
 
+
 def inflate_rooms(room_polygons, outer_polygon, wall_thickness):
-    if np.isinf(wall_thickness):
-        wall_thickness = 1  # Assign a default value of 1
-
     inflated_rooms = []
-    for room in room_polygons:
-        # Repair geometry if it's invalid
-        if not room.is_valid:
-            print(f"Invalid geometry detected: {explain_validity(room)}")
-            room = room.buffer(0)  # Common technique to fix minor geometric issues
+    outer_polygon_is_valid = outer_polygon.is_valid
 
+    for room in room_polygons:
         # Inflate the room
         inflated_room = room.buffer(wall_thickness, cap_style=2, join_style=2)
+        # Intersect with the outer contour only if it's valid and ensure it remains within the building
+        if outer_polygon_is_valid:
+            inflated_room = inflated_room.intersection(outer_polygon)
+        inflated_rooms.append(inflated_room)
 
-        # Check and repair inflated room if invalid
-        if not inflated_room.is_valid:
-            print(f"Invalid geometry after buffering: {explain_validity(inflated_room)}")
-            inflated_room = inflated_room.buffer(0)
+    # Now ensure that the inflated rooms do not overlap with each other
+    non_overlapping_rooms = []
+    for i, room in enumerate(inflated_rooms):
+        # Start with the current inflated room
+        current_room = room
+        # Subtract the area of all other inflated rooms
+        for j, other_room in enumerate(inflated_rooms):
+            if i != j:
+                current_room = current_room.difference(other_room)
+        # Ensure the result is a polygon, and use the largest polygon if it's a MultiPolygon
+        if isinstance(current_room, MultiPolygon):
+            # Iterate over each polygon in the MultiPolygon to find the largest
+            largest_polygon = max(current_room.geoms, key=lambda p: p.area)
+            current_room = largest_polygon
+        non_overlapping_rooms.append(current_room)
 
-        # Intersect with the outer contour to ensure it remains within the building
-        try:
-            intersection_polygon = inflated_room.intersection(outer_polygon)
-            if not intersection_polygon.is_empty:
-                if isinstance(intersection_polygon, MultiPolygon):
-                    intersection_polygon = max(intersection_polygon, key=lambda p: p.area)
-                inflated_rooms.append(intersection_polygon)
-        except Exception as e:
-            print(f"Error during intersection: {e}")
-
-    return inflated_rooms
+    return non_overlapping_rooms
 
 
 def merge_wall_processing(outer_contour_corners, room_corners):
