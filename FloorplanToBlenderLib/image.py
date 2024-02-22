@@ -71,7 +71,14 @@ def mark_outside_black(img, mask):
     # Mark the outside of the house as black
     contours, _ = cv2.findContours(~img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
-    biggest_contour = max(contour_sizes, key=lambda x: x[0])[1]
+    if contour_sizes:
+        biggest_contour = max(contour_sizes, key=lambda x: x[0])[1]
+        # Your existing logic to process the biggest contour
+    else:
+        # Handle the case when no contours are found
+        # This could involve setting a default value for biggest_contour, returning from the function, or raising a custom error
+        print(f"No contours found, {contours}")
+        return img, mask
     mask = np.zeros_like(mask)
     cv2.fillPoly(mask, [biggest_contour], 255)
     img[mask == 0] = 0

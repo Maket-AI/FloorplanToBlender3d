@@ -83,7 +83,12 @@ def inflate_rooms(room_polygons, outer_polygon, wall_thickness):
 
     for room in room_polygons:
         # Inflate the room
-        inflated_room = room.buffer(wall_thickness, cap_style=2, join_style=2)
+        try:
+            inflated_room = room.buffer(wall_thickness, cap_style=2, join_style=2)
+        except ValueError as e:
+            print(f"Error inflating room with wall thickness {wall_thickness}: {e}")
+            # If an error occurs, use the original room
+            inflated_room = room
         # Intersect with the outer contour only if it's valid and ensure it remains within the building
         if outer_polygon_is_valid:
             inflated_room = inflated_room.intersection(outer_polygon)
