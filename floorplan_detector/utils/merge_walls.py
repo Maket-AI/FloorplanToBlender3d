@@ -129,7 +129,7 @@ def merge_wall_processing(outer_contour_corners, room_corners):
     # merged_rooms = merge_walls([r.exterior.coords for r in non_overlapping_room_polygons], threshold)
 
     valid_polygons = []
-    print(f"non_overlapping_room_polygons {non_overlapping_room_polygons}")
+    # print(f"non_overlapping_room_polygons {non_overlapping_room_polygons}")
     # Filter out only Polygon and MultiPolygon objects
     for geom in non_overlapping_room_polygons:
         if isinstance(geom, (Polygon, MultiPolygon)):

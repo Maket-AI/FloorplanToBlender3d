@@ -148,7 +148,7 @@ def norm_blender3d(path, save_image_path):
     contour, img = detect.outer_contours(gray, blank_image, color=(255, 0, 0))
     outer_contour_corners = extract_contour_corners(contour)
     # Example: Print the corners of the outer contour
-    print("Corners of the outer contour:", outer_contour_corners)
+    # print("Corners of the outer contour:", outer_contour_corners)
 
     # Invert wall image for room detection
     gray = ~wall_temp
@@ -172,9 +172,9 @@ def norm_blender3d(path, save_image_path):
 
         # Example: Print the corners of the first room
         if room_corners:
-            print(f"there are {len(room_corners)} rooms")
-            for corner in room_corners:
-                print("Corner", corner)
+            print(f"there are {len(room_corners)} rooms, the corner list: {room_corners}")
+            # for corner in room_corners:
+            #     print("Corner", corner)
 
     except Exception as e:
         print(f"Error occurred in find_rooms: {e}")
@@ -182,5 +182,5 @@ def norm_blender3d(path, save_image_path):
         predefined_corner = [(0, 0), (500, 0), (500, 500), (0, 500)]
         room_corners = [predefined_corner]
         outer_contour_corners = predefined_corner
-    print("Corners of the outer contour2:", outer_contour_corners)
+    print("Corners of the outer contour:", outer_contour_corners)
     return outer_contour_corners, room_corners

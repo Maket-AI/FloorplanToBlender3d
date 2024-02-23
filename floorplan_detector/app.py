@@ -83,6 +83,7 @@ def lambda_handler(event, context):
         # Upload the processed image back to S3
         try:
             s3_client.upload_file(save_image_path, bucket_name, save_image_key)
+            print(f"visualizer_link:{response.get('paths', 'link error')}")
         except Exception as e:
             print(f"Error uploading to S3: {e}")
 
@@ -134,9 +135,14 @@ def s3_test():
     paths = []
     image_file = ['test_1.png', 'test_2.png', 'test_3.jpg', 'test_4.jpg', 'test_5.png', 'test_6.jpeg']
     image_file = ['floorplan_generator.png']
+    image_file = ['example.png']
+    print('start')
     for image_name in image_file:
         event = {
             "image_url": f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/{image_name}"
+        }
+        event = {
+            "image_url":"https://floorplan-detector.s3.ca-central-1.amazonaws.com/uploaded-floorplan/floorplan-5fb4cd49-09ad-4431-bd5d-fc6f114951cb-645e2a67d62d1b49b4813c11.png"
         }
         response = lambda_handler(event, "")
         body = json.loads(response['body'])

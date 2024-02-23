@@ -60,7 +60,7 @@ def transform_rectilinear(json_structure):
 
     # Resolve the overlaps
     resolved_polygons = resolve_overlaps(rectilinear_rooms)
-    print(f"resolved_polygon_type: {type(resolved_polygons)}")
+    # print(f"resolved_polygon_type: {type(resolved_polygons)}")
     # Constructing the transformed data
     transformed_data = json_structure.copy()
     for i, poly in enumerate(resolved_polygons):
