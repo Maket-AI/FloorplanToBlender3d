@@ -85,22 +85,41 @@ def process_room_data(assigned_rooms, scale):
     return plan_data
 
 
+# def prase_json_to_visualizer(room_corners):
+#     scale = 0.1
+#     rooms_polygons = sorted([Polygon(corners) for corners in room_corners], key=lambda p: p.area, reverse=True)
+
+#     # Assign room types
+#     room_types = ['living', 'dining', 'kitchen', 'bathroom'] + ['bedroom'] * (len(rooms_polygons) - 4)
+#     assigned_rooms = [{'type': room_type, 'polygon': room} for room_type, room in zip(room_types, rooms_polygons)]
+#     # Create the JSON structure
+#     json_structure = process_room_data(assigned_rooms, scale)
+#     return json_structure
+
+
 def prase_json_to_visualizer(room_corners):
     scale = 0.1
     rooms_polygons = sorted([Polygon(corners) for corners in room_corners], key=lambda p: p.area, reverse=True)
 
-    # Assign room types
-    room_types = ['living', 'dining', 'kitchen', 'bathroom'] + ['bedroom'] * (len(rooms_polygons) - 4)
-    assigned_rooms = [{'type': room_type, 'polygon': room} for room_type, room in zip(room_types, rooms_polygons)]
+    # Assign room types based on the new requirement
+    day_rooms = ['living', 'dining', 'kitchen']
+    room_types = day_rooms + ['other'] * (len(rooms_polygons) - len(day_rooms))
+    
+    assigned_rooms = []
+    for i, room in enumerate(rooms_polygons):
+        room_type = 'dayroom' if room_types[i] in day_rooms else 'nightroom'
+        assigned_rooms.append({'type': room_type, 'polygon': room})
+
     # Create the JSON structure
     json_structure = process_room_data(assigned_rooms, scale)
+    print(json_structure)
     return json_structure
 
 
 def call_visualizer(invoke_payload, lambda_client):
     try:
         response = lambda_client.invoke(
-            FunctionName="dev-asyncPlanGenStack-VisualizePlanFunction-bsjluq2PlvgR",
+            FunctionName="test-asyncPlanGenStack-VisualizePlanFunction-GbKUbaR4g7fl",
             InvocationType="RequestResponse",
             Payload=json.dumps(invoke_payload),
         )
