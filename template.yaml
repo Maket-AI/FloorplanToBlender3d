@@ -37,6 +37,7 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: !Ref Stage
+      Name: FloorplanDetectorAPI # Explicitly setting the API name
 
 Outputs:
   FloorplanDetectorFunctionArn:
