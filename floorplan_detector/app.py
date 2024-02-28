@@ -69,7 +69,7 @@ def lambda_handler(event, context):
         # Process the image and get the response
         lambda_client = boto3.client("lambda")
         try:
-                response = detect_floorplan_image(input_image_path, save_image_path, lambda_client)
+                response = detect_floorplan_image(input_image_path, save_image_path, lambda_client, image_url)
                 # Assuming response here is already in the API Gateway expected format
                 # Upload the processed image back to S3
                 s3_client.upload_file(save_image_path, bucket_name, save_image_key)

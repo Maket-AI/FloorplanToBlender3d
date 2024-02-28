@@ -5,7 +5,10 @@ from utils.merge_walls import merge_wall_processing
 from utils.rectangularized import rectangularized
 import matplotlib.pyplot as plt
 import numpy as np
-
+import boto3
+import datetime
+import os
+from urllib.parse import urlparse
 
 def plot_rooms(data):
     """
@@ -138,8 +141,41 @@ def call_visualizer(invoke_payload, lambda_client):
     return response_payload
 
 
+def storage_image(image_url,room_number):
+    s3_client = boto3.client('s3')
+    # Parse the URL to get the bucket name and the key
+    parsed_url = urlparse(image_url)
+    bucket_name = parsed_url.netloc.split('.')[0]
+    object_key = parsed_url.path.lstrip('/')
+    
+    current_date = datetime.datetime.now().strftime('%Y-%m-%d')
+    file_name = os.path.basename(object_key)
+    destination_key = f'storage-floorplan/{current_date}_{room_number}_{file_name}'
+    
+    try:
+        # Copy the object within the same bucket
+        copy_response = s3_client.copy_object(
+            Bucket=bucket_name,
+            CopySource={'Bucket': bucket_name, 'Key': object_key},
+            Key=destination_key
+        )
+        
+        # Check if the copy operation was successful
+        if copy_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            print(f"File copied successfully to {destination_key}")
+            
+            # # Delete the original file
+            # s3_client.delete_object(Bucket=bucket_name, Key=object_key)
+            # print(f"Original file deleted successfully from {object_key}")
+        else:
+            print("Error occurred during the copy operation.")
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
-def detect_floorplan_image(path, save_image_path, lambda_client):
+
+
+def detect_floorplan_image(path, save_image_path, lambda_client, image_url):
     """
     Process the floorplan image to detect walls, floors, and rooms,
     and save the processed image to the specified path.
@@ -149,6 +185,7 @@ def detect_floorplan_image(path, save_image_path, lambda_client):
     # detect room contour by Blender3D API.
     outer_contour_corners, room_corners = norm_blender3d(path, save_image_path)
     print(f"outer_contour_corners{outer_contour_corners}")
+    storage_image(image_url, len(room_corners))
     # Merge the wall gaps (output: non-rectangular, rooms not glued)
     merged_rooms = merge_wall_processing(outer_contour_corners, room_corners)
     data_for_payload = prase_json_to_visualizer(merged_rooms)
