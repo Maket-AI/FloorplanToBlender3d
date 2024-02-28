@@ -76,14 +76,7 @@ def s3_test():
             "image_url": f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/{image_name}"
         }
         response = lambda_handler(event, "")
-        body = json.loads(response['body'])
-
-        # Access the 'paths' key in the response
-        if 'paths' in body['response']:
-            paths.append(body['response']['paths'])
-        else:
-            paths.append(["No paths found in response."])
-    print(f"final response: {paths}")
+        print(f"s3_test{response}")
 
 
 if __name__ == "__main__":

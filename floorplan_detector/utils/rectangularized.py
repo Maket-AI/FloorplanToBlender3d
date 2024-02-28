@@ -158,8 +158,8 @@ def split_to_rectangulars(input_data):
     plans = input_data['data']['plans']
     new_plans = []
     corridor_id = 0  # Starting ID for corridors
-
     for room_list in plans:
+        max_room_id = len(room_list)
         for room in room_list:
             corners = room['corners']
             polygon = Polygon(corners)
@@ -185,7 +185,7 @@ def split_to_rectangulars(input_data):
                         'corners': [list(coord) for coord in min_rotated_rect.exterior.coords],
                         'width': min_rotated_rect.bounds[2] - min_rotated_rect.bounds[0],
                         'height': min_rotated_rect.bounds[3] - min_rotated_rect.bounds[1],
-                        'id': corridor_id,
+                        'id': corridor_id+max_room_id,
                         'label': f'corridor_{corridor_id}',
                         'type': 'corridor'
                     })

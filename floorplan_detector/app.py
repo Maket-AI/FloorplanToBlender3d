@@ -77,6 +77,6 @@ def lambda_handler(event, context):
             print(f"Error uploading to S3: {e}")
 
     os.unlink(temp_file.name)
-    return {"statusCode": 200, "body": json.dumps({"response": response})}
+    return response
 
 
