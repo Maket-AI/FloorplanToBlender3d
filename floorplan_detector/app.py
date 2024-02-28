@@ -17,7 +17,7 @@ from subprocess import check_output
 
 
 def lambda_handler(event, context):
-    print(f"Event: {event}")
+    print(f"Master_Event: {event}")
 
     # Check if the function is invoked via API Gateway or directly
     if 'body' in event:
@@ -68,15 +68,30 @@ def lambda_handler(event, context):
 
         # Process the image and get the response
         lambda_client = boto3.client("lambda")
-        response = detect_floorplan_image(input_image_path, save_image_path, lambda_client)
-        # Upload the processed image back to S3
         try:
-            s3_client.upload_file(save_image_path, bucket_name, save_image_key)
-            print(f"visualizer_link:{response.get('paths', 'link error')}")
-        except Exception as e:
-            print(f"Error uploading to S3: {e}")
+                response = detect_floorplan_image(input_image_path, save_image_path, lambda_client)
+                # Assuming response here is already in the API Gateway expected format
+                # Upload the processed image back to S3
+                s3_client.upload_file(save_image_path, bucket_name, save_image_key)
+                
+                # Log the visualizer link for debugging purposes
+                # Assuming the 'response' variable is a dictionary that directly contains the 'body' as a serialized JSON string
+                response_body = json.loads(response.get('body', '{}'))  # Parsing the 'body' to access the 'paths'
+                print(f"visualizer_link:{response_body.get('paths', 'link error')}")
 
-    os.unlink(temp_file.name)
-    return response
+                return response  # Directly return the response from call_visualizer
+
+        except Exception as e:
+            print(f"Error in processing: {e}")
+            # Return error response
+            return {
+                'statusCode': 500,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'error': str(e)})
+            }
+        finally:
+            # Cleanup temporary file
+            if os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
 
 

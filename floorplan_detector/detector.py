@@ -124,13 +124,19 @@ def call_visualizer(invoke_payload, lambda_client):
             Payload=json.dumps(invoke_payload),
         )
     except Exception as e:
-        print(f"Error during Lambda invocation: {e}, with payload {invoke_payload}")
-        exit()
+        print(f"Error during Visualizer Lambda invocation: {e}, with payload {invoke_payload}")
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': str(e)})
+        }
 
-    # Parse and return the response from the Lambda function
+    # Assume the invoked Lambda returns a response formatted for API Gateway
     response_payload = json.loads(response['Payload'].read())
-    response_body = json.loads(response_payload['body'])
-    return response_body
+
+    # Directly return this payload assuming it's formatted correctly
+    return response_payload
+
 
 
 def detect_floorplan_image(path, save_image_path, lambda_client):
