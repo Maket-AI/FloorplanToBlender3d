@@ -55,10 +55,9 @@ def process_batch_test(bucket_name, prefix):
         # Call the lambda handler
         response = lambda_handler(event, "")
         body = json.loads(response['body'])
-
         # Access the 'paths' key in the response
-        if 'paths' in body['response']:
-            paths_dict[file_key] = body['response']['paths']
+        if 'paths' in body:
+            paths_dict[file_key] = body['paths']
         else:
             paths_dict[file_key] = ["No paths found in response."]
     
@@ -68,7 +67,7 @@ def process_batch_test(bucket_name, prefix):
 def s3_test():
     paths = []
     image_file = ['test_1.png', 'test_2.png', 'test_3.jpg', 'test_4.jpg', 'test_5.png', 'test_6.jpeg']
-    image_file = ['test_2.png']
+    # image_file = ['test_2.png']
     # image_file = ['example.png']
     print('start')
     for image_name in image_file:
@@ -80,6 +79,6 @@ def s3_test():
 
 
 if __name__ == "__main__":
-    # paths_dict = process_batch_test('floorplan-detector', 'test_dataset/')
-    # print(f"final response: {paths_dict}")
-    s3_test()
+    paths_dict = process_batch_test('floorplan-detector', 'test_dataset/standard/')
+    print(f"final response: {paths_dict}")
+    # s3_test()
