@@ -70,132 +70,132 @@ def transform_rectilinear(json_structure):
     return transformed_data
 
 
-def largest_inscribed_rectangle_in_multipolygon(multi_polygon):
-    """
-    Find the largest inscribed rectangle within a given MultiPolygon.
+# def largest_inscribed_rectangle_in_multipolygon(multi_polygon):
+#     """
+#     Find the largest inscribed rectangle within a given MultiPolygon.
 
-    :param multi_polygon: A shapely MultiPolygon object.
-    :return: The largest inscribed shapely Polygon (rectangle) and its area.
-    """
-    max_area = 0
-    best_rectangle = None
+#     :param multi_polygon: A shapely MultiPolygon object.
+#     :return: The largest inscribed shapely Polygon (rectangle) and its area.
+#     """
+#     max_area = 0
+#     best_rectangle = None
 
-    # Iterate over each polygon in the MultiPolygon
-    for polygon in multi_polygon.geoms:
-        rect, area = largest_inscribed_rectangle(polygon)
-        if area > max_area:
-            max_area = area
-            best_rectangle = rect
+#     # Iterate over each polygon in the MultiPolygon
+#     for polygon in multi_polygon.geoms:
+#         rect, area = largest_inscribed_rectangle(polygon)
+#         if area > max_area:
+#             max_area = area
+#             best_rectangle = rect
 
-    return best_rectangle, max_area
-
-
-def largest_inscribed_rectangle(polygon):
-    """
-    Find the largest inscribed rectangle within a given polygon. Not consider the polygon with the hole
-
-    :param polygon: A shapely Polygon object.
-    :return: The largest inscribed shapely Polygon (rectangle) and its area.
-    """
-
-    # Initialize variables
-    max_area = 0
-    best_rectangle = None
-
-    # Generate candidate points (discretizing the boundary)
-    boundary_points = np.array(polygon.exterior.coords[:-1])  # exclude duplicate first/last point
-
-    # Iterate over all pairs of points to consider them as potential rectangle corners
-    for i in range(len(boundary_points)):
-        for j in range(len(boundary_points)):
-            p1 = boundary_points[i]
-            p2 = boundary_points[j]
-
-            # Check if a rectangle can be formed (non-degenerate case)
-            if p1[0] != p2[0] and p1[1] != p2[1]:
-                # Construct rectangle points
-                rect_points = [(p1[0], p1[1]), (p2[0], p1[1]), (p2[0], p2[1]), (p1[0], p2[1])]
-
-                # Create a rectangle polygon
-                rect = Polygon(rect_points)
-
-                # Check if the rectangle is within the original polygon
-                if polygon.contains(rect):
-                    area = rect.area
-                    if area > max_area:
-                        max_area = area
-                        best_rectangle = rect
-
-    return best_rectangle, max_area
+#     return best_rectangle, max_area
 
 
-def is_almost_equal_area(polygon1, polygon2, tolerance_percent=1):
-    """
-    Check if two polygons have almost equal area within a certain percentage tolerance.
-    """
-    tolerance = tolerance_percent / 100.0 * polygon1.area
-    return abs(polygon1.area - polygon2.area) < tolerance
+# def largest_inscribed_rectangle(polygon):
+#     """
+#     Find the largest inscribed rectangle within a given polygon. Not consider the polygon with the hole
+
+#     :param polygon: A shapely Polygon object.
+#     :return: The largest inscribed shapely Polygon (rectangle) and its area.
+#     """
+
+#     # Initialize variables
+#     max_area = 0
+#     best_rectangle = None
+
+#     # Generate candidate points (discretizing the boundary)
+#     boundary_points = np.array(polygon.exterior.coords[:-1])  # exclude duplicate first/last point
+
+#     # Iterate over all pairs of points to consider them as potential rectangle corners
+#     for i in range(len(boundary_points)):
+#         for j in range(len(boundary_points)):
+#             p1 = boundary_points[i]
+#             p2 = boundary_points[j]
+
+#             # Check if a rectangle can be formed (non-degenerate case)
+#             if p1[0] != p2[0] and p1[1] != p2[1]:
+#                 # Construct rectangle points
+#                 rect_points = [(p1[0], p1[1]), (p2[0], p1[1]), (p2[0], p2[1]), (p1[0], p2[1])]
+
+#                 # Create a rectangle polygon
+#                 rect = Polygon(rect_points)
+
+#                 # Check if the rectangle is within the original polygon
+#                 if polygon.contains(rect):
+#                     area = rect.area
+#                     if area > max_area:
+#                         max_area = area
+#                         best_rectangle = rect
+
+#     return best_rectangle, max_area
 
 
-def is_rectangular(corners):
-    """
-    Check if a polygon defined by corners is a rectangle using Shapely's library.
-    """
-    polygon = Polygon(corners)
-    if not polygon.is_valid or polygon.is_empty:
-        return False
-
-    min_rotated_rect = polygon.minimum_rotated_rectangle
-
-    # Check if the area difference is less than 1%
-    return is_almost_equal_area(polygon, min_rotated_rect, tolerance_percent=1)
+# def is_almost_equal_area(polygon1, polygon2, tolerance_percent=1):
+#     """
+#     Check if two polygons have almost equal area within a certain percentage tolerance.
+#     """
+#     tolerance = tolerance_percent / 100.0 * polygon1.area
+#     return abs(polygon1.area - polygon2.area) < tolerance
 
 
-def split_to_rectangulars(input_data):
-    """
-    Split non-rectangular rooms into the largest possible rectangles.
-    """
-    plans = input_data['data']['plans']
-    new_plans = []
-    corridor_id = 0  # Starting ID for corridors
-    for room_list in plans:
-        max_room_id = len(room_list)
-        for room in room_list:
-            corners = room['corners']
-            polygon = Polygon(corners)
-            area = polygon.area
+# def is_rectangular(corners):
+#     """
+#     Check if a polygon defined by corners is a rectangle using Shapely's library.
+#     """
+#     polygon = Polygon(corners)
+#     if not polygon.is_valid or polygon.is_empty:
+#         return False
 
-            if is_rectangular(corners):
-                new_plans.append(room)
-            else:
-                remaining_polygon = polygon
-                while True:
-                    if isinstance(remaining_polygon, MultiPolygon):
-                        largest_rect, largest_area = largest_inscribed_rectangle_in_multipolygon(remaining_polygon)
-                    else:
-                        largest_rect, largest_area = largest_inscribed_rectangle(remaining_polygon)
+#     min_rotated_rect = polygon.minimum_rotated_rectangle
 
-                    # Break if no rectangle is found or it's too small
-                    if largest_rect is None or largest_area < 0.1 * area:
-                        break
-                    min_rotated_rect = largest_rect.minimum_rotated_rectangle
-                    # print(min_rotated_rect, list(min_rotated_rect.exterior.coords))
-                    # Add the largest rectangle as a new 'corridor'
-                    new_plans.append({
-                        'corners': [list(coord) for coord in min_rotated_rect.exterior.coords],
-                        'width': min_rotated_rect.bounds[2] - min_rotated_rect.bounds[0],
-                        'height': min_rotated_rect.bounds[3] - min_rotated_rect.bounds[1],
-                        'id': corridor_id+max_room_id,
-                        'label': f'corridor_{corridor_id}',
-                        'type': 'corridor'
-                    })
-                    corridor_id += 1
+#     # Check if the area difference is less than 1%
+#     return is_almost_equal_area(polygon, min_rotated_rect, tolerance_percent=1)
 
-                    # Update the remaining polygon by subtracting the found rectangle
-                    remaining_polygon = remaining_polygon.difference(largest_rect)
 
-    input_data['data']['plans'] = [new_plans]
-    return input_data
+# def split_to_rectangulars(input_data):
+#     """
+#     Split non-rectangular rooms into the largest possible rectangles.
+#     """
+#     plans = input_data['data']['plans']
+#     new_plans = []
+#     corridor_id = 0  # Starting ID for corridors
+#     for room_list in plans:
+#         max_room_id = len(room_list)
+#         for room in room_list:
+#             corners = room['corners']
+#             polygon = Polygon(corners)
+#             area = polygon.area
+
+#             if is_rectangular(corners):
+#                 new_plans.append(room)
+#             else:
+#                 remaining_polygon = polygon
+#                 while True:
+#                     if isinstance(remaining_polygon, MultiPolygon):
+#                         largest_rect, largest_area = largest_inscribed_rectangle_in_multipolygon(remaining_polygon)
+#                     else:
+#                         largest_rect, largest_area = largest_inscribed_rectangle(remaining_polygon)
+
+#                     # Break if no rectangle is found or it's too small
+#                     if largest_rect is None or largest_area < 0.1 * area:
+#                         break
+#                     min_rotated_rect = largest_rect.minimum_rotated_rectangle
+#                     # print(min_rotated_rect, list(min_rotated_rect.exterior.coords))
+#                     # Add the largest rectangle as a new 'corridor'
+#                     new_plans.append({
+#                         'corners': [list(coord) for coord in min_rotated_rect.exterior.coords],
+#                         'width': min_rotated_rect.bounds[2] - min_rotated_rect.bounds[0],
+#                         'height': min_rotated_rect.bounds[3] - min_rotated_rect.bounds[1],
+#                         'id': corridor_id+max_room_id,
+#                         'label': f'corridor_{corridor_id}',
+#                         'type': 'corridor'
+#                     })
+#                     corridor_id += 1
+
+#                     # Update the remaining polygon by subtracting the found rectangle
+#                     remaining_polygon = remaining_polygon.difference(largest_rect)
+
+#     input_data['data']['plans'] = [new_plans]
+#     return input_data
 
 
 def check_if_rectilinear(polygon, label):
@@ -265,9 +265,10 @@ def rectangularized(input_data):
     # approximate rectangular with overlapped; then remove overlap, shape may not be rectangulars.
     data_with_polygon = transform_rectilinear(input_data)
     # break into rectangulars rooms from a non-rectangular polygon room
-    data_transformed_copy = copy.deepcopy(data_with_polygon)
-    data_transformed_rect = split_to_rectangulars(data_transformed_copy)
+    # data_transformed_copy = copy.deepcopy(data_with_polygon)
+    # Non-rectangular-alpha, remove split_to_rectangulars.
+    # data_transformed_rect = split_to_rectangulars(data_transformed_copy)
     # merge small gaps by grid
-    data_transformed_rect = align_rooms_to_grid(data_transformed_rect)
+    data_transformed_rect = align_rooms_to_grid(data_with_polygon)
     # check rectilinear
     return data_transformed_rect

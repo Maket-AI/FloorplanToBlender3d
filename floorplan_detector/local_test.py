@@ -64,7 +64,15 @@ def process_batch_test(bucket_name, prefix):
     return paths_dict
 
 
-def s3_test():
+def s3_test(img_url=None):
+    if img_url != None:
+        event = {
+            "image_url": img_url
+        }
+        response = lambda_handler(event, "")
+        print(f"s3_test{response}")
+        return 
+    
     paths = []
     image_file = ['test_1.png', 'test_2.png', 'test_3.jpg', 'test_4.jpg', 'test_5.png', 'test_6.jpeg']
     # image_file = ['test_2.png']
@@ -79,6 +87,8 @@ def s3_test():
 
 
 if __name__ == "__main__":
-    paths_dict = process_batch_test('floorplan-detector', 'test_dataset/standard/')
-    print(f"final response: {paths_dict}")
-    # s3_test()
+    # paths_dict = process_batch_test('floorplan-detector', 'test_dataset/standard/')
+    # print(f"final response: {paths_dict}")
+    image_name = "simple-house-design copy.png"
+    image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/test_dataset/standard/{image_name}"
+    s3_test(image_url)

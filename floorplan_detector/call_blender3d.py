@@ -78,7 +78,7 @@ def detect_and_mask_windows_and_doors_boxes(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = detect.wall_filter(gray)
     gray = ~gray
-    doors, colored_doors = detect.find_details(img=gray.copy(), room_closing_max_length = 200)
+    doors, colored_doors = detect.find_details(img=gray.copy(), room_closing_max_length = 180)
     def adjust_and_filter_doors(doors):
         adjusted_doors = []
         for door_mask in doors:
