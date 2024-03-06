@@ -1,5 +1,5 @@
 from shapely.geometry import Polygon
-import json
+from shapely.ops import snap
 import cv2
 import numpy as np
 import sys
@@ -13,6 +13,38 @@ except ImportError:
     from FloorplanToBlenderLib import *  # floorplan to blender lib
 from subprocess import check_output
 
+
+def merge_close_polygons(polygons, tolerance=10):
+    # Snap polygons together that are close to each other
+    snapped_polygons = polygons.copy()
+
+    # Iterate over the polygons to snap them to each other
+    for i in range(len(polygons)):
+        for j in range(i + 1, len(polygons)):
+            snapped_polygons[j] = snap(snapped_polygons[j], snapped_polygons[i], tolerance)
+
+    # Check for any overlaps and merge the polygons if they do
+    merged_polygons = []
+    for poly in snapped_polygons:
+        merged = False
+        for i in range(len(merged_polygons)):
+            if poly.intersects(merged_polygons[i]):
+                # Merge the two polygons
+                merged_polygons[i] = merged_polygons[i].union(poly)
+                merged = True
+                break
+        if not merged:
+            merged_polygons.append(poly)
+
+    # Convert the merged polygons back to the original coordinate format (list of list of lists)
+    merged_polygons_coords = []
+    for poly in merged_polygons:
+        coords = list(poly.exterior.coords)
+        # Convert tuples to lists and remove the last coordinate if it's the same as the first
+        coords = [list(map(int, coord)) for coord in coords[:-1]]
+        merged_polygons_coords.append(coords)
+
+    return merged_polygons_coords
 
 def extract_room_corners(boxes):
     """
@@ -78,7 +110,7 @@ def detect_and_mask_windows_and_doors_boxes(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = detect.wall_filter(gray)
     gray = ~gray
-    doors, colored_doors = detect.find_details(img=gray.copy(), room_closing_max_length = 180)
+    doors, colored_doors = detect.find_details(img=gray.copy(), room_closing_max_length = 150)
     def adjust_and_filter_doors(doors):
         adjusted_doors = []
         for door_mask in doors:
@@ -162,16 +194,41 @@ def norm_blender3d(path, save_image_path):
         boxes, blank_image = detect.precise_boxes(
             gray_rooms, blank_image, color=(255, 215, 0)
         )
+
+        room_corners = extract_room_corners(boxes)
+
+        # Detect smaller rooms
+        s_rooms, colored_s_rooms = detect.find_details(
+            gray.copy(),
+            noise_removal_threshold=50,
+            corners_threshold=0.01,
+            room_closing_max_length=130,
+            gap_in_wall_max_threshold=6000,
+            gap_in_wall_min_threshold=2000,
+        )
+        gray_details = cv2.cvtColor(colored_s_rooms, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite("./gray_smaller_rooms.png", gray_details)
+        s_room_boxes, blank_image = detect.precise_boxes(
+            gray_details, blank_image, color=(0, 200, 100)
+        )
+
+        # Extract smaller rooms corners
+        s_room_corners = extract_room_corners(s_room_boxes)
+
+        # merge smaller rooms that are close with each other
+        s_room_corners = merge_close_polygons([Polygon(coords) for coords in s_room_corners])
+        
+        # Append smaller rooms corners to room corners
+        room_corners.extend(s_room_corners)
+
         cv2.imwrite("./blank_image.png", blank_image)
 
         # Save the processed image
         cv2.imwrite(save_image_path, blank_image)
         print(f"Processed image saved as {save_image_path}")
-
-        room_corners = extract_room_corners(boxes)
-
         # Example: Print the corners of the first room
         if room_corners:
+            print(f"there are {len(s_room_corners)} smaller rooms, the corner list: {s_room_corners}")
             print(f"there are {len(room_corners)} rooms, the corner list: {room_corners}")
             # for corner in room_corners:
             #     print("Corner", corner)

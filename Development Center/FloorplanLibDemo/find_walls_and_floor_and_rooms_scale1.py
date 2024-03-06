@@ -82,8 +82,8 @@ def test(path):
         noise_removal_threshold=50,
         corners_threshold=0.01,
         room_closing_max_length=130,
-        gap_in_wall_max_threshold=5000,
-        gap_in_wall_min_threshold=10,
+        gap_in_wall_max_threshold=6000,
+        gap_in_wall_min_threshold=2000,
     )
     gray_details = cv2.cvtColor(colored_doors, cv2.COLOR_BGR2GRAY)
     boxes, blank_image = detect.precise_boxes(
@@ -95,5 +95,5 @@ def test(path):
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
-
-test(example_image_path)
+input_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "PNG copy.png"))
+test(input_image_path)

@@ -1,7 +1,7 @@
 from shapely.geometry import Polygon
 import json
 from call_blender3d import norm_blender3d
-from utils.merge_walls import merge_wall_processing
+from floorplan_detector.utils.merge_walls import merge_wall_processing
 from utils.rectangularized import rectangularized
 import matplotlib.pyplot as plt
 import numpy as np
@@ -90,7 +90,8 @@ def process_room_data(assigned_rooms, scale):
 
 def prase_json_to_visualizer(room_corners):
     scale = 0.1
-    rooms_polygons = sorted([Polygon(corners) for corners in room_corners], key=lambda p: p.area, reverse=True)
+    filtered_polygons = [Polygon(corners) for corners in room_corners if not Polygon(corners).is_empty]
+    rooms_polygons = sorted([Polygon(corners) for corners in filtered_polygons], key=lambda p: p.area, reverse=True)
 
     # Assign room types
     room_types = ['living', 'dining', 'kitchen', 'bathroom'] + ['bedroom'] * (len(rooms_polygons) - 4)
@@ -98,25 +99,6 @@ def prase_json_to_visualizer(room_corners):
     # Create the JSON structure
     json_structure = process_room_data(assigned_rooms, scale)
     return json_structure
-
-
-# def prase_json_to_visualizer(room_corners):
-#     scale = 0.1
-#     rooms_polygons = sorted([Polygon(corners) for corners in room_corners], key=lambda p: p.area, reverse=True)
-
-#     # Assign room types based on the new requirement
-#     day_rooms = ['living', 'dining', 'kitchen']
-#     room_types = day_rooms + ['other'] * (len(rooms_polygons) - len(day_rooms))
-    
-#     assigned_rooms = []
-#     for i, room in enumerate(rooms_polygons):
-#         room_type = 'dayroom' if room_types[i] in day_rooms else 'nightroom'
-#         assigned_rooms.append({'type': room_type, 'polygon': room})
-
-#     # Create the JSON structure
-#     json_structure = process_room_data(assigned_rooms, scale)
-#     print(json_structure)
-#     return json_structure
 
 
 def call_visualizer(invoke_payload, lambda_client):
@@ -163,10 +145,6 @@ def storage_image(image_url,room_number):
         # Check if the copy operation was successful
         if copy_response['ResponseMetadata']['HTTPStatusCode'] == 200:
             print(f"File copied successfully to {destination_key}")
-            
-            # # Delete the original file
-            # s3_client.delete_object(Bucket=bucket_name, Key=object_key)
-            # print(f"Original file deleted successfully from {object_key}")
         else:
             print("Error occurred during the copy operation.")
     
@@ -184,10 +162,11 @@ def detect_floorplan_image(path, save_image_path, lambda_client, image_url):
     print(f"open_iamge in {path}")
     # detect room contour by Blender3D API.
     outer_contour_corners, room_corners = norm_blender3d(path, save_image_path)
-    print(f"outer_contour_corners{outer_contour_corners}")
     storage_image(image_url, len(room_corners))
     # Merge the wall gaps (output: non-rectangular, rooms not glued)
+    # print(f"debug:{len(room_corners)}:{room_corners}")
     merged_rooms = merge_wall_processing(outer_contour_corners, room_corners)
+    # print(f"debug:{len(merged_rooms)}:{merged_rooms}")
     data_for_payload = prase_json_to_visualizer(merged_rooms)
     data_for_payload = rectangularized(data_for_payload)
     print(f"payload for visualizer:{data_for_payload}")
