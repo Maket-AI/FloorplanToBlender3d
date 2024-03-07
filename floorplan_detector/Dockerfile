@@ -16,24 +16,20 @@
 # # Set the CMD to your handler function
 # CMD ["app.lambda_handler"]
 
-# Use the base image provided by AWS Lambda for Python 3.8
 FROM public.ecr.aws/lambda/python:3.8
 
-# Install additional system dependencies
+# Install necessary system dependencies
 RUN yum install -y mesa-libGL
 
-# Set the working directory to the Lambda task root (default is /var/task)
-WORKDIR ${LAMBDA_TASK_ROOT}
+# Set the working directory in the container
+WORKDIR /var/task
 
-# Copy the FloorplanToBlenderLib directory to the Docker image
-COPY FloorplanToBlenderLib FloorplanToBlenderLib/
+# Copy the FloorplanToBlenderLib and floorplan_detector directories
+COPY FloorplanToBlenderLib ./FloorplanToBlenderLib
+COPY floorplan_detector ./floorplan_detector
 
-# Copy the floorplan_detector directory to the Docker image
-COPY floorplan_detector floorplan_detector/
+# Install Python dependencies
+RUN pip3 install -r floorplan_detector/requirements.txt --target .
 
-# Copy the requirements file and install Python dependencies in the Lambda task root
-COPY floorplan_detector/requirements.txt .
-RUN pip3 install -r requirements.txt --target .
-
-# Set the CMD to your handler function, adjust the path according to your project structure
+# Set the CMD to your handler (assuming app.py is within floorplan_detector and has a lambda_handler function)
 CMD ["floorplan_detector.app.lambda_handler"]
