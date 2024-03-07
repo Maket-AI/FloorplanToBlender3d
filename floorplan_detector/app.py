@@ -6,6 +6,8 @@ import boto3
 import tempfile
 from urllib.parse import urlparse, unquote
 import json
+from FloorplanToBlenderLib import detect
+
 
 floorplan_lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 try:
