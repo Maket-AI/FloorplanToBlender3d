@@ -30,7 +30,7 @@ Resources:
             RestApiId: !Ref MyApi
     Metadata:
       Dockerfile: floorplan_detector/Dockerfile
-      DockerContext: .  # Root Directory of the project 
+      DockerContext: .  # Root Directory
       DockerTag: latest
 
   MyApi:
