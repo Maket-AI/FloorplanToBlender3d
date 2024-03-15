@@ -90,7 +90,10 @@ if __name__ == "__main__":
     # paths_dict = process_batch_test('floorplan-detector', 'test_dataset/standard/')
     # print(f"final response: {paths_dict}")
     image_name = "simple-house-design copy.png"
-    image_name = "test_2.png"
-    image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/test_dataset/standard/{image_name}"
-    image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/{image_name}"
+    image_name = "simple-stylish-1024x991.png"
+    image_name = "1-bedrom.jpeg"
+    # image_name = "w575.png"
+    # image_name = "simple-stylish-1024x991_makeup.png"
+    image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/test_dataset/{image_name}"
+    # image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/{image_name}"
     s3_test(image_url)

@@ -220,6 +220,20 @@ def check_if_rectilinear(polygon, label):
 
     return polygon  # Rectilinear case
 
+def rectify_polygon(polygon):
+    # Remove repeated points
+    unique_coords = list(dict.fromkeys(polygon.exterior.coords))
+
+    # Check if the polygon with unique coordinates is valid
+    new_polygon = Polygon(unique_coords)
+    if new_polygon.is_valid:
+        return new_polygon
+    else:
+        # If the polygon is still invalid, return its minimum bounding rectangle
+        minx, miny, maxx, maxy = new_polygon.bounds
+        return Polygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy)])
+
+
 
 def align_rooms_to_grid(input_data, grid_unit=2):
     """
@@ -254,6 +268,7 @@ def align_rooms_to_grid(input_data, grid_unit=2):
                 shape_poly = Polygon(shape["corners"])
                 snapped_poly = snap_polygon(shape_poly, grid_unit)
                 snapped_poly = check_if_rectilinear(snapped_poly, shape['type'])
+                snapped_poly = rectify_polygon(snapped_poly)
                 shape['corners'] = [list(coord) for coord in snapped_poly.exterior.coords]
                 shape['width'] = snapped_poly.bounds[2] - snapped_poly.bounds[0]
                 shape['height'] = snapped_poly.bounds[3] - snapped_poly.bounds[1]
@@ -269,6 +284,6 @@ def rectangularized(input_data):
     # Non-rectangular-alpha, remove split_to_rectangulars.
     # data_transformed_rect = split_to_rectangulars(data_transformed_copy)
     # merge small gaps by grid
-    data_transformed_rect = align_rooms_to_grid(data_with_polygon)
+    data_transformed_rect = align_rooms_to_grid(data_with_polygon, 5)
     # check rectilinear
     return data_transformed_rect

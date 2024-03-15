@@ -70,7 +70,11 @@ def detect_floorplan_image(path, save_image_path):
 # Set the paths
 
 image_names = ["test (1).jpg", "test (1).png", "test (2).jpg", "test (2).png", "test (3).jpg"]
-image_names = ["floorplan_google2.jpg"]
+# image_names = ["floorplan_google2.jpg"]
+# image_names = ["simple-stylish-1024x991.png"]
+# image_names = ["1-bedrom.jpeg"]
+image_names = ["simple-stylish-1024x991.png"]
+image_names = ["simple-stylish-1024x991_makeup.png"]
 for image_name in image_names:
     input_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), image_name))
     save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), f"detected_{image_name}"))

@@ -110,7 +110,7 @@ def detect_and_mask_windows_and_doors_boxes(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = detect.wall_filter(gray)
     gray = ~gray
-    doors, colored_doors = detect.find_details(img=gray.copy(), room_closing_max_length = 150)
+    doors, colored_doors = detect.find_details(img=gray.copy(), room_closing_max_length = 50)
     def adjust_and_filter_doors(doors):
         adjusted_doors = []
         for door_mask in doors:
@@ -159,8 +159,8 @@ def norm_blender3d(path, save_image_path):
         raise ValueError(f"Image not found at path: {path}")
     # Replace the windows by solid wall
     img = detect_and_mask_windows_and_doors_boxes(img)
-    # Convert to grayscale
-    img = cv2.flip(img, 0)
+    # FLip
+    # img = cv2.flip(img, 0)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Resulting image
@@ -179,8 +179,6 @@ def norm_blender3d(path, save_image_path):
     # Detect outer contours (simple floor or roof solution)
     contour, img = detect.outer_contours(gray, blank_image, color=(255, 0, 0))
     outer_contour_corners = extract_contour_corners(contour)
-    # Example: Print the corners of the outer contour
-    # print("Corners of the outer contour:", outer_contour_corners)
 
     # Invert wall image for room detection
     gray = ~wall_temp
@@ -202,7 +200,7 @@ def norm_blender3d(path, save_image_path):
             gray.copy(),
             noise_removal_threshold=50,
             corners_threshold=0.01,
-            room_closing_max_length=130,
+            room_closing_max_length=100,
             gap_in_wall_max_threshold=6000,
             gap_in_wall_min_threshold=2000,
         )
