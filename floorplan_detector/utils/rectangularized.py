@@ -3,7 +3,7 @@ from itertools import combinations
 import numpy as np
 from shapely.geometry import Polygon, box, MultiPolygon
 import copy
-
+from collections import OrderedDict
 
 def transform_rectilinear(json_structure):
     room_data = json_structure['data']['plans'][0]
@@ -220,22 +220,39 @@ def check_if_rectilinear(polygon, label):
 
     return polygon  # Rectilinear case
 
-def rectify_polygon(polygon):
-    # Remove repeated points
-    unique_coords = list(dict.fromkeys(polygon.exterior.coords))
+# def rectify_polygon(polygon):
+#     # Remove repeated points
+#     unique_coords = list(dict.fromkeys(polygon.exterior.coords))
 
-    # Check if the polygon with unique coordinates is valid
-    new_polygon = Polygon(unique_coords)
+#     # Check if the polygon with unique coordinates is valid
+#     new_polygon = Polygon(unique_coords)
+#     if new_polygon.is_valid:
+#         return new_polygon
+#     else:
+#         # If the polygon is still invalid, return its minimum bounding rectangle
+#         minx, miny, maxx, maxy = new_polygon.bounds
+#         return Polygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy)])
+
+def rectify_polygon(polygon):
+    unique_coords = list(OrderedDict.fromkeys(polygon.exterior.coords[:-1]))  # Exclude the automatically repeated last point
+    if len(unique_coords) < 3:
+        # If not enough unique points for a valid polygon, use the minimum bounding rectangle
+        minx, miny, maxx, maxy = polygon.bounds
+        return Polygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy), (minx, miny)])
+    else:
+        # Add the first point to the end to close the polygon
+        unique_coords.append(unique_coords[0])
+        new_polygon = Polygon(unique_coords)
+
+    # Check if the new polygon is valid, otherwise return its minimum bounding rectangle
     if new_polygon.is_valid:
         return new_polygon
     else:
-        # If the polygon is still invalid, return its minimum bounding rectangle
         minx, miny, maxx, maxy = new_polygon.bounds
-        return Polygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy)])
+        return Polygon([(minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy), (minx, miny)])
 
 
-
-def align_rooms_to_grid(input_data, grid_unit=2):
+def align_rooms_to_grid(input_data, grid_unit=3):
     """
     Snap the coordinates of rectangles and polygons to a specified grid.
 
@@ -272,7 +289,6 @@ def align_rooms_to_grid(input_data, grid_unit=2):
                 shape['corners'] = [list(coord) for coord in snapped_poly.exterior.coords]
                 shape['width'] = snapped_poly.bounds[2] - snapped_poly.bounds[0]
                 shape['height'] = snapped_poly.bounds[3] - snapped_poly.bounds[1]
-
     return input_data
 
 

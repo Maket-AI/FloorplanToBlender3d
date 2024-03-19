@@ -1,4 +1,4 @@
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, MultiPoint
 import json
 from call_blender3d import norm_blender3d
 from floorplan_detector.utils.merge_walls import merge_wall_processing
@@ -9,6 +9,7 @@ import boto3
 import datetime
 import os
 from urllib.parse import urlparse
+import math
 
 def plot_rooms(data):
     """
@@ -52,32 +53,68 @@ def get_response_as_json(response):
     return response_payload
 
 
-def calculate_dimensions(polygon, scale):
-    minx, miny, maxx, maxy = polygon.bounds
-    width = (maxx - minx) * scale
-    height = (maxy - miny) * scale
-    return width, height
+# def calculate_dimensions(polygon, scale):
+#     minx, miny, maxx, maxy = polygon.bounds
+#     width = (maxx - minx) * scale
+#     height = (maxy - miny) * scale
+#     return width, height
 
 
-def calculate_dimensions(polygon, scale):
-    # Assuming this function calculates the width and height from a scaled polygon
-    bounds = polygon.bounds
+def calculate_dimensions_from_points(points, scale):
+    # Calculate dimensions from a list of points
+    if len(points) >= 2:  # At least two points needed to define a rectangle
+        multi_point = MultiPoint(points)
+        bounds = multi_point.bounds
+        width = (bounds[2] - bounds[0]) * scale
+        height = (bounds[3] - bounds[1]) * scale
+        return width, height
+    else:
+        # Default to zero if there aren't enough points to define a rectangle
+        return 0, 0
+    
+
+def calculate_dimensions(geometry, scale):
+    print(geometry, type(geometry))
+    if isinstance(geometry, Polygon):
+        # Check if the polygon has enough points to form a LinearRing
+        if len(geometry.exterior.coords) >= 4:
+            bounds = geometry.bounds
+        else:
+            # Fallback if the Polygon is invalid; consider bounds as zeros
+            bounds = (0, 0, 0, 0)
+    elif isinstance(geometry, (list, MultiPoint)) and len(geometry) >= 2:
+        # Handling a list of points or a MultiPoint by calculating the minimal bounding box
+        if isinstance(geometry, list):
+            geometry = MultiPoint(geometry)
+        bounds = geometry.bounds
+    else:
+        # Fallback for other cases
+        bounds = (0, 0, 0, 0)
+    
+    # Calculate width and height using the bounds
     width = (bounds[2] - bounds[0]) * scale
     height = (bounds[3] - bounds[1]) * scale
+    print(f"calcalue width and height {width} and {height}")
     return width, height
+
 
 def process_room_data(assigned_rooms, scale):
     room_data = []
+    count = 0
+    # print(f"assigned_rooms {len(assigned_rooms)}")
     for index, room in enumerate(assigned_rooms):
         width, height = calculate_dimensions(room['polygon'], scale)
-        room_data.append({
+        room = {
             "corners": [[x * scale, y * scale] for x, y in room['polygon'].exterior.coords[:-1]],  
             "width": width,
             "height": height,
             "id": index,
             "label": room['type'] + "_" + str(index),
             "type": room['type']
-        })
+        }
+        room_data.append(room)
+        # print(f"room_data count {count}, with {room}")
+        count +=1
     plan_data = {
         "data": {
             "userID": "local-test-visualizer",
@@ -91,6 +128,7 @@ def process_room_data(assigned_rooms, scale):
             }
         }
     }
+    print(f"finish plan data{count}")
     return plan_data
 
 def room_polygon_processing(rooms_polygons, max_base):
@@ -101,8 +139,26 @@ def room_polygon_processing(rooms_polygons, max_base):
             processed_rooms.append({'type': room_type, 'polygon': poly})
     return processed_rooms
 
-def parse_json_to_visualizer(room_corners):
-    scale = 0.1
+
+def define_scale_rate(assigned_rooms):
+    total_area = 0
+    room_count = 0
+    for room in assigned_rooms:
+        if room['type'] != 'corridor':
+            area = room['polygon'].area
+            total_area += area
+            room_count += 1
+    if room_count == 0:
+        return 1
+    actual_average_area = total_area / room_count
+    print(f"actual_average_area {actual_average_area}")
+    default_area = 180
+    scale_rate_by_area =  default_area / actual_average_area
+    linear_scale_rate = math.sqrt(scale_rate_by_area)
+    return linear_scale_rate
+
+
+def parse_json_to_visualizer(room_corners, outer_contour_corners):
     filtered_polygons = [Polygon(corners) for corners in room_corners if Polygon(corners).area > 0]
     sorted_polygons = sorted(filtered_polygons, key=lambda p: p.area, reverse=True)
 
@@ -118,7 +174,9 @@ def parse_json_to_visualizer(room_corners):
     room_types = predefined_types + ['bedroom'] * (len(rooms_polygons) - len(predefined_types))
     assigned_rooms = [{'type': rtype if index < len(predefined_types) else room['type'], 'polygon': room['polygon']}
                       for index, (rtype, room) in enumerate(zip(room_types, rooms_polygons))]
-
+    # default rate 180 sqft per room (exlusive corrdior)
+    scale = define_scale_rate(assigned_rooms)
+    print(f"liner scale {scale}")
     # Create the JSON structure with the processed room data
     json_structure = process_room_data(assigned_rooms, scale)
     return json_structure
@@ -190,7 +248,8 @@ def detect_floorplan_image(path, save_image_path, lambda_client, image_url):
     # print(f"debug:{len(room_corners)}:{room_corners}")
     merged_rooms = merge_wall_processing(outer_contour_corners, room_corners)
     # print(f"debug:{len(merged_rooms)}:{merged_rooms}")
-    data_for_payload = parse_json_to_visualizer(merged_rooms)
+    data_for_payload = parse_json_to_visualizer(merged_rooms, outer_contour_corners)
+    print("begin rectangulazerized")
     data_for_payload = rectangularized(data_for_payload)
     print(f"payload for visualizer:{data_for_payload}")
     lambda_response = call_visualizer(data_for_payload, lambda_client)
