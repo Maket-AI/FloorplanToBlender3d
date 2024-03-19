@@ -76,7 +76,7 @@ def s3_test(img_url=None):
     paths = []
     image_file = ['test_1.png', 'test_2.png', 'test_3.jpg', 'test_4.jpg', 'test_5.png', 'test_6.jpeg']
     image_file = ['test_5.png']
-    # image_file = ['test_2.png']
+    image_file = ['test_2.png']
     print('start')
     for image_name in image_file:
         event = {
@@ -91,9 +91,9 @@ if __name__ == "__main__":
     # print(f"final response: {paths_dict}")
     image_name = "simple-house-design copy.png"
     image_name = "simple-stylish-1024x991.png"
-    image_name = "1-bedrom.jpeg"
-    # image_name = "w575.png"
+    # image_name = "1-bedrom.jpeg"
+    image_name = "w575.png"
     # image_name = "simple-stylish-1024x991_makeup.png"
     image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/test_dataset/{image_name}"
     # image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/{image_name}"
-    s3_test(image_url)
+    s3_test()
