@@ -53,13 +53,6 @@ def get_response_as_json(response):
     return response_payload
 
 
-# def calculate_dimensions(polygon, scale):
-#     minx, miny, maxx, maxy = polygon.bounds
-#     width = (maxx - minx) * scale
-#     height = (maxy - miny) * scale
-#     return width, height
-
-
 def calculate_dimensions_from_points(points, scale):
     # Calculate dimensions from a list of points
     if len(points) >= 2:  # At least two points needed to define a rectangle
@@ -74,7 +67,7 @@ def calculate_dimensions_from_points(points, scale):
     
 
 def calculate_dimensions(geometry, scale):
-    print(geometry, type(geometry))
+    # print(geometry, type(geometry))
     if isinstance(geometry, Polygon):
         # Check if the polygon has enough points to form a LinearRing
         if len(geometry.exterior.coords) >= 4:
@@ -94,7 +87,7 @@ def calculate_dimensions(geometry, scale):
     # Calculate width and height using the bounds
     width = (bounds[2] - bounds[0]) * scale
     height = (bounds[3] - bounds[1]) * scale
-    print(f"calcalue width and height {width} and {height}")
+    # print(f"calcalue width and height {width} and {height}")
     return width, height
 
 
@@ -128,16 +121,7 @@ def process_room_data(assigned_rooms, scale):
             }
         }
     }
-    print(f"finish plan data{count}")
     return plan_data
-
-def room_polygon_processing(rooms_polygons, max_base):
-    processed_rooms = []
-    for poly in rooms_polygons:
-        if poly.area >= max_base / 10:
-            room_type = 'corridor' if poly.area < max_base / 4 else 'room'
-            processed_rooms.append({'type': room_type, 'polygon': poly})
-    return processed_rooms
 
 
 def define_scale_rate(assigned_rooms):
@@ -158,27 +142,86 @@ def define_scale_rate(assigned_rooms):
     return linear_scale_rate
 
 
+def room_polygon_processing(rooms_polygons, max_base):
+    processed_rooms = []
+    total_area = 0
+    # extremely smaller room is abandoned, and smaller room is corrdior
+    for poly in rooms_polygons:
+        if poly.area >= max_base / 10:  
+            total_area += poly.area
+            room_type = 'corridor' if poly.area < max_base / 6 else 'room'
+            processed_rooms.append({'type': room_type, 'polygon': poly})
+    
+    # if the leagrest room take over 0.4 of floorplan, then join living and dining together
+    if rooms_polygons[0].area / total_area >= 0.4:
+        predefined_types = ['living_room']
+    else:
+        predefined_types = ['living_room', 'dining_room']
+    for i, room in enumerate(processed_rooms):
+        if room['type'] != 'corridor':
+            if i < len(predefined_types):
+                room['type'] = predefined_types[i]  
+            else:
+                room['type'] = 'bedroom'  
+    # # if only two rooms, one is living one is bed.
+    # if len(processed_rooms) == 2:
+    #     processed_rooms[0]['type'] = 'living_room'  
+    #     processed_rooms[1]['type'] = 'bedroom' 
+    # else:
+    #     # predefined_types = ['living_room', 'dining_room', 'kitchen', 'bathroom']
+    #     predefined_types = ['living_room', 'dining_room']
+    #     for i, room in enumerate(processed_rooms):
+    #         if room['type'] != 'corridor':
+    #             if i < len(predefined_types):
+    #                 room['type'] = predefined_types[i]  
+    #             else:
+    #                 room['type'] = 'bedroom'  
+    return processed_rooms
+
+
+
+def process_room_data(assigned_rooms, scale):
+    room_data = []
+    for index, room in enumerate(assigned_rooms):
+        # Assuming calculate_dimensions correctly calculates dimensions from the polygon and scale
+        width, height = calculate_dimensions(room['polygon'], scale)
+        room_label = room['type'] if room['type'] in ['living_room', 'dining_room', 'corrdior'] else 'room'
+        room_data.append({
+            "corners": [[x * scale, y * scale] for x, y in room['polygon'].exterior.coords[:-1]],  
+            "width": width,
+            "height": height,
+            "id": index,
+            "label": room_label + "_" + str(index),
+            "type": room['type']
+        })
+
+    plan_data = {
+        "data": {
+            "userID": "local-test-visualizer",
+            "source": "local-editor",
+            "plans": [room_data],
+            "options": {
+                "save_image": True,
+                "add_closet": False,
+                "add_deck": False,
+                "add_walkin": False
+            }
+        }
+    }
+    return plan_data
+
+
 def parse_json_to_visualizer(room_corners, outer_contour_corners):
     filtered_polygons = [Polygon(corners) for corners in room_corners if Polygon(corners).area > 0]
     sorted_polygons = sorted(filtered_polygons, key=lambda p: p.area, reverse=True)
-
-    # Calculate the max base if there are at least two rooms, otherwise use the area of the single room
+    
     max_base = (sorted_polygons[0].area + sorted_polygons[1].area) / 2 if len(sorted_polygons) > 1 else sorted_polygons[0].area
-
-    # Process the polygons to determine room types and remove any that are too small
+    
     rooms_polygons = room_polygon_processing(sorted_polygons, max_base)
-    # print([poly['polygon'].area for poly in rooms_polygons])  # Debug print to check areas
-
-    # Adjust the room_types list based on the number of processed rooms, ensuring we don't run out of predefined types
-    predefined_types = ['living', 'dining', 'kitchen', 'bathroom']
-    room_types = predefined_types + ['bedroom'] * (len(rooms_polygons) - len(predefined_types))
-    assigned_rooms = [{'type': rtype if index < len(predefined_types) else room['type'], 'polygon': room['polygon']}
-                      for index, (rtype, room) in enumerate(zip(room_types, rooms_polygons))]
-    # default rate 180 sqft per room (exlusive corrdior)
-    scale = define_scale_rate(assigned_rooms)
-    print(f"liner scale {scale}")
-    # Create the JSON structure with the processed room data
-    json_structure = process_room_data(assigned_rooms, scale)
+    print("finish room filter")
+    scale = define_scale_rate(rooms_polygons)  
+    json_structure = process_room_data(rooms_polygons, scale)
+    
     return json_structure
 
 
@@ -249,7 +292,6 @@ def detect_floorplan_image(path, save_image_path, lambda_client, image_url):
     merged_rooms = merge_wall_processing(outer_contour_corners, room_corners)
     # print(f"debug:{len(merged_rooms)}:{merged_rooms}")
     data_for_payload = parse_json_to_visualizer(merged_rooms, outer_contour_corners)
-    print("begin rectangulazerized")
     data_for_payload = rectangularized(data_for_payload)
     print(f"payload for visualizer:{data_for_payload}")
     lambda_response = call_visualizer(data_for_payload, lambda_client)

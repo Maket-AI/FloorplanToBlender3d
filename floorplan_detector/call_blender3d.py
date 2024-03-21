@@ -14,6 +14,54 @@ except ImportError:
 from subprocess import check_output
 
 
+def list_icon_files(icon_folder_path):
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    icon_folder_path = os.path.join(script_dir, icon_folder_path)
+
+    supported_formats = ['.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff']
+    icon_files = [os.path.join(icon_folder_path, f) for f in os.listdir(icon_folder_path)
+                  if os.path.isfile(os.path.join(icon_folder_path, f)) and os.path.splitext(f)[1].lower() in supported_formats]
+    return icon_files
+
+
+def remove_icons_from_grayscale_image(gray_img, icon_paths, threshold=0.8, debug=True):
+    if gray_img is None:
+        raise ValueError("Grayscale image is not valid.")
+
+    # Process each icon
+    for icon_path in icon_paths:
+        icon = cv2.imread(icon_path, 0)
+        if icon is None:
+            raise ValueError(f"Icon not found at path: {icon_path}")
+        cv2.imwrite("./icon.png", icon)
+        # Perform template matching
+        result = cv2.matchTemplate(gray_img, icon, cv2.TM_CCOEFF_NORMED)
+
+        # If debugging, save the result image
+        if debug:
+            cv2.imwrite(f"./debug_template_match_result_{os.path.basename(icon_path)}.png", result * 255)
+
+        locations = np.where(result >= threshold)
+
+        # If debugging, print the locations
+        if debug:
+            print(f"Locations for {icon_path}: {locations}")
+
+        for loc in zip(*locations[::-1]):
+            top_left = loc
+            bottom_right = (top_left[0] + icon.shape[1], top_left[1] + icon.shape[0])
+
+            # If debugging, draw a red rectangle instead of white to visualize detection
+            if debug:
+                cv2.rectangle(gray_img, top_left, bottom_right, (0, 0, 255), 2)
+            else:
+                cv2.rectangle(gray_img, top_left, bottom_right, (255), -1)
+
+    return gray_img
+
+
+
+
 def merge_close_polygons(polygons, tolerance=10):
     # Snap polygons together that are close to each other
     snapped_polygons = polygons.copy()
@@ -169,13 +217,19 @@ def norm_blender3d(path, save_image_path):
     cv2.imwrite("./gray_before.png", gray)
     gray = highlight_walls(gray)
     cv2.imwrite("./gray_after.png", gray)
-    # Create wall image (filter out small objects from image)
+
+    # remove icons
+    # icon_paths = list_icon_files("icons")
+    # if icon_paths:
+    #     gray = remove_icons_from_grayscale_image(gray, icon_paths)
+    # cv2.imwrite("./gray_remove_icon.png", gray)
+
+     # Create wall image (filter out small objects from image)
     wall_img = detect.wall_filter(gray)
-    wall_temp = wall_img
 
     # Detect walls
+    wall_temp = wall_img
     boxes, img = detect.precise_boxes(wall_img, blank_image)
-
     # Detect outer contours (simple floor or roof solution)
     contour, img = detect.outer_contours(gray, blank_image, color=(255, 0, 0))
     outer_contour_corners = extract_contour_corners(contour)

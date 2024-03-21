@@ -92,8 +92,16 @@ if __name__ == "__main__":
     image_name = "simple-house-design copy.png"
     image_name = "simple-stylish-1024x991.png"
     image_name = "1-bedrom.jpeg"
+    image_name = "01-online-floor-plan-maker copy.png"
+    # image_name = "21_52_00-plan_0-B_21_52_36.jpg"
     # image_name = "w575.png"
     # image_name = "simple-stylish-1024x991_makeup.png"
+    image_name = "sample-floorplan.png"
+    # image_name = "example4 copy.png"
+    image_name = 'simple-house-design copy 2.png'
+    image_name = "test_6.jpeg"
+    image_name = "RoomSketcher-House-Floor-Plans-2452430-800.jpg"
+    image_name = "main-qimg-5614d2f44c92f49159ddb30c7f664400-lq.jpeg"
     image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/test_dataset/{image_name}"
     # image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/{image_name}"
     s3_test(image_url)
