@@ -162,7 +162,7 @@ def room_polygon_processing(rooms_polygons, max_base):
             if i < len(predefined_types):
                 room['type'] = predefined_types[i]  
             else:
-                room['type'] = 'mudroom'  
+                room['type'] = 'room'  
     # # if only two rooms, one is living one is bed.
     # if len(processed_rooms) == 2:
     #     processed_rooms[0]['type'] = 'living_room'  
