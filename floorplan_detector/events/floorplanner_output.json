@@ -1,0 +1,190 @@
+{
+   "id":156226626,
+   "name":"Project67",
+   "public":false,
+   "features":[
+      "sd"
+   ],
+   "settings":{
+      "wallHeight":274.32,
+      "wallSectionHeight":274.32,
+      "wallThickness":15,
+      "wallOuterThickness":30,
+      "useMetric":false,
+      "showGrid":true,
+      "showDims":true,
+      "showShortDims":false,
+      "showAreaDims":true,
+      "generateOuterDimension":true,
+      "showDropShadows":true,
+      "showObjects":true,
+      "showFixtures":true,
+      "showItemOutline":false,
+      "showObjectColour":true,
+      "showStructuralColour":true,
+      "showFloorsBelow":false,
+      "showSymbols":true,
+      "showObjectMono":false,
+      "showLights":false,
+      "hideLightsOnPan":false,
+      "useSection3D":false,
+      "showLabels":true,
+      "areaLabelOutline":true,
+      "areaLabelLetterSpacing":7,
+      "dimLineLabelHorizontal":false,
+      "exportLabels3D":false,
+      "showShadows3D":true,
+      "exportOrtho3D":false,
+      "visuals":"BW",
+      "showTexts":true,
+      "arrowHeadType":"arrow",
+      "northArrowRotation":0,
+      "northArrowKind":1,
+      "blueprintMode":false,
+      "dimLineFont":"arial",
+      "hideItemsAboveHeight":122,
+      "hideItemsAbove":false,
+      "xRayWalls":true
+   },
+   "floors":[
+      {
+         "designs":[
+            {
+               "name":"Generated",
+               "lines":[
+                  
+               ],
+               "dimensions":[
+                  
+               ],
+               "areas": [
+                  {
+                      "room_type": "living_room",
+                      "area": 30,
+                      "center_point": {"x": 200, "y": 250},
+                      "poly": [
+                          {"x": 150, "y": 220},
+                          {"x": 250, "y": 220},
+                          {"x": 250, "y": 280},
+                          {"x": 150, "y": 280}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  },
+                  {
+                      "room_type": "kitchen",
+                      "area": 25,
+                      "center_point": {"x": 100, "y": 200},
+                      "poly": [
+                          {"x": 50, "y": 150},
+                          {"x": 150, "y": 150},
+                          {"x": 150, "y": 250},
+                          {"x": 50, "y": 250}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  },
+                  {
+                      "room_type": "dining_room",
+                      "area": 20,
+                      "center_point": {"x": 300, "y": 200},
+                      "poly": [
+                          {"x": 250, "y": 150},
+                          {"x": 350, "y": 150},
+                          {"x": 350, "y": 250},
+                          {"x": 250, "y": 250}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  },
+                  {
+                      "room_type": "corridor",
+                      "area": 15,
+                      "center_point": {"x": 200, "y": 150},
+                      "poly": [
+                          {"x": 150, "y": 130},
+                          {"x": 250, "y": 130},
+                          {"x": 250, "y": 170},
+                          {"x": 150, "y": 170}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  },
+                  {
+                      "room_type": "entry",
+                      "area": 12,
+                      "center_point": {"x": 100, "y": 50},
+                      "poly": [
+                          {"x": 50, "y": 30},
+                          {"x": 150, "y": 30},
+                          {"x": 150, "y": 70},
+                          {"x": 50, "y": 70}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  },
+                  {
+                      "room_type": "bedroom",
+                      "area": 35,
+                      "center_point": {"x": 350, "y": 300},
+                      "poly": [
+                          {"x": 300, "y": 250},
+                          {"x": 400, "y": 250},
+                          {"x": 400, "y": 350},
+                          {"x": 300, "y": 350}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  },
+                  {
+                      "room_type": "bathroom",
+                      "area": 10,
+                      "center_point": {"x": 270, "y": 370},
+                      "poly": [
+                          {"x": 250, "y": 350},
+                          {"x": 290, "y": 350},
+                          {"x": 290, "y": 390},
+                          {"x": 250, "y": 390}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  },
+                  {
+                      "room_type": "garage",
+                      "area": 50,
+                      "center_point": {"x": 50, "y": 350},
+                      "poly": [
+                          {"x": 0, "y": 300},
+                          {"x": 100, "y": 300},
+                          {"x": 100, "y": 400},
+                          {"x": 0, "y": 400}
+                      ],
+                      "color": "#DDDDDD",
+                      "showAreaLabel": true
+                  }
+               ],
+               "labels":[
+                  
+               ],
+               "surfaces":[
+                  
+               ],
+               "items":[
+                  
+               ],
+               "id":250860474,
+               "settings":{
+                  "engineAutoThickness":false,
+                  "engineAutoDims":true,
+                  "areaLabelMultiplier":1.09,
+                  "scaleMultiplierDimensions":1.31,
+                  "scaleMultiplierComments":1,
+                  "dimLineLabelHorizontal":false,
+                  "showCeilings3D":true,
+                  "minWallLength":4
+               }
+            }
+         ]
+      }
+   ]
+}

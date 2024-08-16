@@ -80,7 +80,7 @@ def lambda_handler(event, context):
                 # Assuming the 'response' variable is a dictionary that directly contains the 'body' as a serialized JSON string
                 response_body = json.loads(response.get('body', '{}'))  # Parsing the 'body' to access the 'paths'
                 print(f"visualizer_link:{response_body.get('paths', 'link error')}")
-
+                print(response_body)
                 return response  # Directly return the response from call_visualizer
 
         except Exception as e:
