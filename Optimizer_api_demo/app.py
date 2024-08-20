@@ -3,8 +3,12 @@ import json
 
 app = Flask(__name__)
 
+# Store the floorplan_data in a global variable or use a session to store it for the user.
+stored_floorplan_data = None
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    global stored_floorplan_data
     if request.method == 'POST':
         file = request.files.get('floorplanner_plan')
         if file:
@@ -12,10 +16,10 @@ def index():
                 # Read the uploaded file and decode it
                 data = file.read().decode('utf-8')
                 # Load the JSON data
-                json_data = json.loads(data)
-                print('Loaded floorplan_data:', json_data)
+                stored_floorplan_data = json.loads(data)
+                print('Loaded floorplan_data:', stored_floorplan_data)
                 # Pass the JSON data to the template
-                return render_template('index.html', floorplan_data=json_data)
+                return render_template('index.html', floorplan_data=stored_floorplan_data)
             except Exception as e:
                 print(f"Error processing file: {e}")
                 return "Error processing file", 400
@@ -24,20 +28,22 @@ def index():
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    global stored_floorplan_data
+    # Check if we have stored floorplan data
+    if not stored_floorplan_data:
+        return "No floorplan data found", 400
+
     # Print the raw data for debugging
     print("Request submission")
     
-    raw_data = request.form.get('data')
     selected_indices = request.form.get('selected_indices')
     action = request.form.get('renovate_action')
 
-    print(f"Raw data received: {raw_data}")
     print(f"Selected indices received: {selected_indices}")
     print(f"Renovation action: {action}")
     
     try:
         # Parse the received JSON data
-        data = json.loads(raw_data)
         selected_indices = json.loads(selected_indices)
     except json.JSONDecodeError as e:
         print(f"JSON decode error: {str(e)}")
@@ -57,7 +63,7 @@ def submit():
 
     # Create the final result JSON
     result_json = {
-        "data": data,
+        "data": stored_floorplan_data,  # Use the stored floorplan data
         "renovate_id_set": selected_indices,
         "renovate_change": renovate_change
     }

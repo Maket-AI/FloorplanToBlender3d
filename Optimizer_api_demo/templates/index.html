@@ -27,7 +27,6 @@
         <h3>Select Room Indices to Renovate:</h3>
         <div id="selected-rooms"></div>
         <form id="renovation-form" method="POST" action="/submit">
-            <input type="hidden" name="data" value="{{ floorplan_data | tojson }}">
             <input type="hidden" name="selected_indices" id="selected_indices" value="">
             <div>
                 <label for="renovate_action">How to Renovate:</label>
@@ -46,11 +45,6 @@
             <br>
             <button type="submit">Submit</button>
         </form>
-
-        <!-- Debugging script to log the serialized floorplan_data JSON -->
-        <script>
-            console.log("Serialized floorplan_data JSON:", JSON.stringify({{ floorplan_data | tojson | safe }}));
-        </script>
 
         <script>
             const floorplanData = {{ floorplan_data | tojson }};
@@ -123,61 +117,6 @@
             canvas.addEventListener('click', handleCanvasClick);
 
             drawFloorplan();
-
-            document.getElementById('renovation-form').addEventListener('submit', function(event) {
-                event.preventDefault(); // Prevent the default form submission
-
-                const rawData = document.querySelector('input[name="data"]').value;
-                console.log('Raw data from hidden input before parsing:', rawData);
-
-                let dataObject;
-                try {
-                    dataObject = JSON.parse(rawData);
-                    console.log('Parsed data:', dataObject);
-                } catch (error) {
-                    console.error('Error parsing JSON:', error.message);
-                    console.log('Unparsed raw data:', rawData);
-                    return; // Exit the function to prevent further errors
-                }
-
-                const selectedIndicesArray = JSON.parse(document.getElementById('selected_indices').value);
-                console.log('Parsed Selected Indices:', selectedIndicesArray);
-
-                const selectedAction = document.getElementById('renovate_action').value;
-                console.log('Selected Renovate Action:', selectedAction);
-
-                const addRoomsValue = selectedAction === 'add_rooms' ? document.getElementById('add_rooms').value : '';
-                console.log('Add Rooms Value:', addRoomsValue);
-
-                const finalData = {
-                    data: dataObject,
-                    renovate_id_set: selectedIndicesArray,
-                    renovate_change: {
-                        delete: selectedAction === 'delete_room' ? selectedIndicesArray : [],
-                        add: selectedAction === 'add_rooms' ? [addRoomsValue] : []
-                    }
-                };
-
-                console.log('Final JSON to send:', finalData);
-
-                fetch('/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(finalData)
-                })
-                .then(response => {
-                    console.log('Server response status:', response.status);
-                    return response.json();
-                })
-                .then(result => {
-                    console.log('Success:', result);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            });
         </script>
         {% endif %}
     </div>
