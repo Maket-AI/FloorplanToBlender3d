@@ -3,18 +3,24 @@ import json
 
 app = Flask(__name__)
 
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         file = request.files.get('floorplanner_plan')
         if file:
-            data = file.read().decode('utf-8')
-            json_data = json.loads(data)
-            print('floorplan_data:', json_data.keys())  # Confirm data is being loaded
-            return render_template('index.html', floorplan_data=json_data)
+            try:
+                # Read the uploaded file and decode it
+                data = file.read().decode('utf-8')
+                # Load the JSON data
+                json_data = json.loads(data)
+                print('Loaded floorplan_data:', json_data)
+                # Pass the JSON data to the template
+                return render_template('index.html', floorplan_data=json_data)
+            except Exception as e:
+                print(f"Error processing file: {e}")
+                return "Error processing file", 400
+    # If GET request, render the template with no data
     return render_template('index.html', floorplan_data=None)
-
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -30,12 +36,14 @@ def submit():
     print(f"Renovation action: {action}")
     
     try:
+        # Parse the received JSON data
         data = json.loads(raw_data)
         selected_indices = json.loads(selected_indices)
     except json.JSONDecodeError as e:
         print(f"JSON decode error: {str(e)}")
         return f"JSON decode error: {str(e)}"
 
+    # Prepare the renovation change data
     renovate_change = {
         "delete": [],
         "add": []
@@ -47,19 +55,21 @@ def submit():
     elif action == 'delete_room':
         renovate_change['delete'] = selected_indices
 
+    # Create the final result JSON
     result_json = {
         "data": data,
         "renovate_id_set": selected_indices,
         "renovate_change": renovate_change
     }
 
-    # Print the JSON to the console
+    # Print the result JSON to the console
     print(json.dumps(result_json, indent=4))
 
-    # Save the JSON to a file
+    # Optionally, save the result JSON to a file
     with open('renovation_output.json', 'w') as f:
         json.dump(result_json, f, indent=4)
 
+    # Return the result JSON as a response
     return jsonify(result_json)
 
 if __name__ == '__main__':
