@@ -1,62 +1,178 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Floorplan Renovation Service</title>
-  </head>
-  <body>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
     <div class="container">
-      <h1>Floorplan Renovation Service</h1>
-      <form method="POST" enctype="multipart/form-data">
-        <div>
-          <label for="floorplanner_plan">Upload Floorplan JSON:</label>
-          <input type="file" id="floorplanner_plan" name="floorplanner_plan" required>
-        </div>
-        <br>
-        <div>
-          <label for="room_type">Choose Room Type to Renovate:</label>
-          <select id="room_type" name="room_type">
-            <option value="living">Living Room</option>
-            <option value="bedroom">Bedroom</option>
-            <option value="kitchen">Kitchen</option>
-            <option value="bathroom">Bathroom</option>
-            <!-- Add other room types as options -->
-          </select>
-        </div>
-        <br>
-        <div>
-          <label for="renovate_action">How to Renovate:</label>
-          <select id="renovate_action" name="renovate_action">
-            <option value="add_rooms">Add Rooms</option>
-            <option value="change_layout">Same Room Type but Change Layout</option>
-            <option value="delete_room">Delete Room</option>
-          </select>
-        </div>
-        <br>
-        <div id="add_rooms_options" style="display:none;">
-          <label for="add_rooms">Add Rooms:</label>
-          <input type="text" id="add_rooms" name="add_rooms" placeholder="e.g., bedroom, bathroom">
-        </div>
-        <br>
-        <button type="submit">Submit</button>
-      </form>
+        <h1>Floorplan Renovation Service</h1>
+        <form id="upload-form" method="POST" enctype="multipart/form-data" action="/">
+            <div>
+                <label for="floorplanner_plan">Upload Floorplan JSON:</label>
+                <input type="file" id="floorplanner_plan" name="floorplanner_plan" required>
+            </div>
+            <br>
+            <button type="submit">Upload</button>
+        </form>
 
-      {% if result %}
-      <h2>Renovation Result</h2>
-      <pre>{{ result }}</pre>
-      {% endif %}
+        {% if floorplan_data %}
+        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
+        <h3>Select Room Indices to Renovate:</h3>
+        <div id="selected-rooms"></div>
+        <form id="renovation-form" method="POST" action="/submit">
+            <input type="hidden" name="data" value="{{ floorplan_data | tojson }}">
+            <input type="hidden" name="selected_indices" id="selected_indices" value="">
+            <div>
+                <label for="renovate_action">How to Renovate:</label>
+                <select id="renovate_action" name="renovate_action">
+                    <option value="" selected disabled>Select an action</option>
+                    <option value="add_rooms">Add Rooms</option>
+                    <option value="change_layout">Same Room Type but Change Layout</option>
+                    <option value="delete_room">Delete Room</option>
+                </select>
+            </div>
+            <br>
+            <div id="add_rooms_options" style="display:none;">
+                <label for="add_rooms">Add Rooms:</label>
+                <input type="text" id="add_rooms" name="add_rooms" placeholder="e.g., bedroom, bathroom">
+            </div>
+            <br>
+            <button type="submit">Submit</button>
+        </form>
+        {% endif %}
     </div>
 
+    {% if floorplan_data %}
     <script>
-      document.getElementById('renovate_action').addEventListener('change', function() {
-        const addRoomsOption = document.getElementById('add_rooms_options');
-        if (this.value === 'add_rooms') {
-          addRoomsOption.style.display = 'block';
-        } else {
-          addRoomsOption.style.display = 'none';
+        const floorplanData = {{ floorplan_data | tojson }};
+        const canvas = document.getElementById('floorplan-canvas');
+        const ctx = canvas.getContext('2d');
+        const selectedIndices = [];
+
+        function drawPolygon(points, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
         }
-      });
+
+        function drawFloorplan() {
+            floorplanData.areas.forEach((area, index) => {
+                drawPolygon(area.poly, area.color);
+                ctx.fillStyle = "#000";
+                ctx.font = "14px Arial";
+                ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+            });
+        }
+
+        function handleCanvasClick(event) {
+            const x = event.offsetX;
+            const y = event.offsetY;
+            floorplanData.areas.forEach((area, index) => {
+                const path = new Path2D();
+                path.moveTo(area.poly[0].x, area.poly[0].y);
+                area.poly.slice(1).forEach(point => path.lineTo(point.x, point.y));
+                path.closePath();
+
+                if (ctx.isPointInPath(path, x, y)) {
+                    const selectedIndex = selectedIndices.indexOf(index);
+                    if (selectedIndex === -1) {
+                        // Room is not selected, so select it
+                        selectedIndices.push(index);
+                        drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)'); // Highlight selected area
+                    } else {
+                        // Room is already selected, so deselect it
+                        selectedIndices.splice(selectedIndex, 1);
+                        drawPolygon(area.poly, area.color); // Re-draw the original area color
+                    }
+                }
+            });
+
+            // Re-draw all selected rooms to ensure they remain highlighted
+            selectedIndices.forEach(idx => {
+                const area = floorplanData.areas[idx];
+                drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
+            });
+
+            document.getElementById('selected_indices').value = JSON.stringify(selectedIndices);
+            updateSelectedRoomsDisplay();
+        }
+
+        function updateSelectedRoomsDisplay() {
+            const selectedRoomsDiv = document.getElementById('selected-rooms');
+            selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
+        }
+
+        document.getElementById('renovate_action').addEventListener('change', function() {
+            const addRoomsOption = document.getElementById('add_rooms_options');
+            addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
+        });
+
+        canvas.addEventListener('click', handleCanvasClick);
+
+        drawFloorplan();
+
+        document.getElementById('renovation-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const rawData = document.querySelector('input[name="data"]').value;
+            console.log('Raw data before parsing:', rawData);
+
+            try {
+                const dataObject = JSON.parse(rawData);
+                console.log('Parsed data:', dataObject);
+            } catch (error) {
+                console.error('Error parsing JSON:', error.message);
+                console.log('Unparsed raw data:', rawData);
+                return; // Exit the function to prevent further errors
+            }
+
+            const selectedIndicesArray = JSON.parse(document.getElementById('selected_indices').value);
+            const selectedAction = document.getElementById('renovate_action').value;
+
+            const finalData = {
+                data: dataObject,
+                renovate_id_set: selectedIndicesArray,
+                renovate_change: {
+                    delete: [],
+                    add: selectedAction === 'add_rooms' ? [document.getElementById('add_rooms').value] : []
+                }
+            };
+
+            console.log('Final JSON to send:', finalData);
+
+            // Use fetch to send the form data to the server
+            fetch('/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(finalData)
+            })
+            .then(response => {
+                console.log('Server response status:', response.status);
+                return response.json();
+            }) // Parse the JSON response from the server
+            .then(result => {
+                console.log('Success:', result);
+                // Optionally, handle the response here, e.g., display it on the page
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Optionally, handle errors here, e.g., show an error message to the user
+            });
+        });
     </script>
-  </body>
+    {% endif %}
+</body>
 </html>

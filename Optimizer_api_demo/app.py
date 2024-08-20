@@ -3,42 +3,64 @@ import json
 
 app = Flask(__name__)
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    result = None
     if request.method == 'POST':
         file = request.files.get('floorplanner_plan')
-        room_type = request.form.get('room_type')
-        action = request.form.get('renovate_action')
-        renovate_change = {}
-
         if file:
             data = file.read().decode('utf-8')
             json_data = json.loads(data)
-            renovate_id_set = []
+            print('floorplan_data:', json_data.keys())  # Confirm data is being loaded
+            return render_template('index.html', floorplan_data=json_data)
+    return render_template('index.html', floorplan_data=None)
 
-            if action == 'add_rooms':
-                rooms_to_add = request.form.get('add_rooms').split(',')
-                renovate_change['add'] = [room.strip() for room in rooms_to_add]
-            elif action == 'change_layout':
-                # Implement change layout logic here
-                pass
-            elif action == 'delete_room':
-                renovate_change['delete'] = room_type
 
-            for index, area in enumerate(json_data["AREA"]):
-                if action == 'delete_room' and area["type"] == room_type:
-                    renovate_id_set.append(index)
+@app.route('/submit', methods=['POST'])
+def submit():
+    # Print the raw data for debugging
+    print("Request submission")
+    
+    raw_data = request.form.get('data')
+    selected_indices = request.form.get('selected_indices')
+    action = request.form.get('renovate_action')
 
-            result_json = {
-                "data": json_data,
-                "renovate_id_set": renovate_id_set,
-                "renovate_change": renovate_change
-            }
+    print(f"Raw data received: {raw_data}")
+    print(f"Selected indices received: {selected_indices}")
+    print(f"Renovation action: {action}")
+    
+    try:
+        data = json.loads(raw_data)
+        selected_indices = json.loads(selected_indices)
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {str(e)}")
+        return f"JSON decode error: {str(e)}"
 
-            result = json.dumps(result_json, indent=4)
+    renovate_change = {
+        "delete": [],
+        "add": []
+    }
 
-    return render_template('index.html', result=result)
+    if action == 'add_rooms':
+        rooms_to_add = request.form.get('add_rooms').split(',')
+        renovate_change['add'] = [room.strip() for room in rooms_to_add]
+    elif action == 'delete_room':
+        renovate_change['delete'] = selected_indices
+
+    result_json = {
+        "data": data,
+        "renovate_id_set": selected_indices,
+        "renovate_change": renovate_change
+    }
+
+    # Print the JSON to the console
+    print(json.dumps(result_json, indent=4))
+
+    # Save the JSON to a file
+    with open('renovation_output.json', 'w') as f:
+        json.dump(result_json, f, indent=4)
+
+    return jsonify(result_json)
 
 if __name__ == '__main__':
     app.run(debug=True)
