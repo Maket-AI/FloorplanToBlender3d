@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import json
 import boto3
+import os
 
 app = Flask(__name__)
 
@@ -75,6 +76,11 @@ def submit():
 
     # Print the result JSON to the console
     # print(json.dumps(result_json, indent=4))
+    file_path = os.path.join(os.getcwd(), 'optimizer_input.json')
+    with open(file_path, 'w') as f:
+        json.dump(result_json, f, indent=4)
+    
+    print(f"Saved result JSON to {file_path}")
 
     try:
         # Invoke the Lambda function using the full name
