@@ -8,11 +8,20 @@
         canvas {
             border: 1px solid black;
         }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Floorplan Renovation Service</h1>
+
+        {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+        
         <form id="upload-form" method="POST" enctype="multipart/form-data" action="/">
             <div>
                 <label for="floorplanner_plan">Upload Floorplan JSON:</label>
@@ -46,6 +55,34 @@
             <button type="submit">Submit</button>
         </form>
 
+        {% if areas %}
+        <script>
+            const areas = {{ areas | tojson }};
+            const canvas = document.getElementById('floorplan-canvas');
+            const ctx = canvas.getContext('2d');
+
+            function drawPolygon(points, color) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            function drawFloorplan() {
+                areas.forEach(area => {
+                    drawPolygon(area.poly, area.color);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(area.name, area.poly[0].x + 5, area.poly[0].y - 5);
+                });
+            }
+
+            drawFloorplan();
+        </script>
+        {% else %}
         <script>
             const floorplanData = {{ floorplan_data | tojson }};
             const canvas = document.getElementById('floorplan-canvas');
@@ -118,6 +155,7 @@
 
             drawFloorplan();
         </script>
+        {% endif %}
         {% endif %}
     </div>
 </body>

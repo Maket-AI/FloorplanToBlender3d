@@ -1,10 +1,14 @@
 from flask import Flask, request, jsonify, render_template
 import json
+import boto3
 
 app = Flask(__name__)
 
 # Store the floorplan_data in a global variable or use a session to store it for the user.
 stored_floorplan_data = None
+# Initialize the boto3 Lambda client
+lambda_client = boto3.client('lambda', region_name='ca-central-1')
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -17,7 +21,7 @@ def index():
                 data = file.read().decode('utf-8')
                 # Load the JSON data
                 stored_floorplan_data = json.loads(data)
-                print('Loaded floorplan_data:', stored_floorplan_data)
+                print('Loaded floorplan_data keys:', stored_floorplan_data.keys())
                 # Pass the JSON data to the template
                 return render_template('index.html', floorplan_data=stored_floorplan_data)
             except Exception as e:
@@ -25,6 +29,7 @@ def index():
                 return "Error processing file", 400
     # If GET request, render the template with no data
     return render_template('index.html', floorplan_data=None)
+
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -69,14 +74,38 @@ def submit():
     }
 
     # Print the result JSON to the console
-    print(json.dumps(result_json, indent=4))
+    # print(json.dumps(result_json, indent=4))
 
-    # Optionally, save the result JSON to a file
-    with open('renovation_output.json', 'w') as f:
-        json.dump(result_json, f, indent=4)
+    try:
+        # Invoke the Lambda function using the full name
+        response = lambda_client.invoke(
+            FunctionName='dev-asyncPlanGenStack-OptimizerFunction-pvcuXetLNgvZ',
+            InvocationType='RequestResponse',
+            Payload=json.dumps(result_json)
+        )
 
-    # Return the result JSON as a response
-    return jsonify(result_json)
+        # Read and decode the response payload
+        response_payload = response['Payload'].read().decode('utf-8')
+        response_payload = json.loads(response_payload)  # Convert to dictionary
+
+        # Check if the 'body' key exists and is itself a JSON string
+        if isinstance(response_payload, dict) and 'body' in response_payload:
+            response_body = json.loads(response_payload['body'])
+            if "response" in response_body and "floors" in response_body["response"]:
+                areas = response_body["response"]["floors"][0]['designs'][0]['areas']
+                print(f"areas is {areas}")
+                return render_template('index.html', floorplan_data=stored_floorplan_data, areas=areas)
+            else:
+                print("Lambda function returned unexpected data")
+                return render_template('index.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: unexpected response from the Lambda function.")
+        else:
+            print("Lambda function returned unexpected data format")
+            return render_template('index.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: unexpected response format from the Lambda function.")
+    
+    except Exception as e:
+        print(f"Error invoking Lambda: {str(e)}")
+        return render_template('index.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: could not process the request.")
+
 
 if __name__ == '__main__':
     app.run(debug=True)
