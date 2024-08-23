@@ -878,12 +878,13 @@
         }
     },
     "renovate_id_set": [
-        0
+        1
     ],
     "renovate_change": {
         "delete": [],
         "add": [
-            "bedroom"
+            "bedroom",
+            "bathroom"
         ]
     }
 }
