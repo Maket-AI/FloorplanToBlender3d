@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Renovated Floorplan Result</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        .renovate-button {
+            display: block;
+            margin: 20px 0;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .renovate-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Renovated Floorplan Result</h1>
+        <button class="renovate-button" onclick="window.location.href='/'">Renovate Other Plans</button>
+
+        {% if areas %}
+        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
+
+        <script>
+            const areas = {{ areas | tojson }};
+            const canvas = document.getElementById('floorplan-canvas');
+            const ctx = canvas.getContext('2d');
+
+            function drawPolygon(points, color) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            function drawFloorplan() {
+                areas.forEach((area, index) => {
+                    drawPolygon(area.poly, area.color);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                });
+            }
+
+            drawFloorplan();
+        </script>
+        {% else %}
+        <p>No floorplan areas to display.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

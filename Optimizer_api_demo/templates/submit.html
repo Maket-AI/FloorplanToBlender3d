@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Floorplan Renovation Service</title>
+    <title>Final Floorplan</title>
     <style>
         canvas {
             border: 1px solid black;
@@ -16,22 +16,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>Floorplan Renovation Service</h1>
+        <h1>Renovated Floorplan</h1>
 
         {% if error_message %}
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
-        
-        <form id="upload-form" method="POST" enctype="multipart/form-data" action="/">
-            <div>
-                <label for="floorplanner_plan">Upload Floorplan JSON:</label>
-                <input type="file" id="floorplanner_plan" name="floorplanner_plan" required>
-            </div>
-            <br>
-            <button type="submit">Upload</button>
-        </form>
 
-        {% if floorplan_data %}
+        {% if areas %}
         <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
         <h3>Select Room Indices to Renovate:</h3>
         <div id="selected-rooms"></div>
@@ -42,7 +33,7 @@
                 <select id="renovate_action" name="renovate_action">
                     <option value="" selected disabled>Select an action</option>
                     <option value="add_rooms">Add Rooms</option>
-                    <option value="change_layout">Same Room Type but Change Layout</option>
+                    <option value="change_layout">Change Layout</option>
                     <option value="delete_room">Delete Room</option>
                 </select>
             </div>
@@ -55,36 +46,8 @@
             <button type="submit">Submit</button>
         </form>
 
-        {% if areas %}
         <script>
             const areas = {{ areas | tojson }};
-            const canvas = document.getElementById('floorplan-canvas');
-            const ctx = canvas.getContext('2d');
-
-            function drawPolygon(points, color) {
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.moveTo(points[0].x, points[0].y);
-                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            function drawFloorplan() {
-                areas.forEach(area => {
-                    drawPolygon(area.poly, area.color);
-                    ctx.fillStyle = "#000";
-                    ctx.font = "14px Arial";
-                    ctx.fillText(area.name, area.poly[0].x + 5, area.poly[0].y - 5);
-                });
-            }
-
-            drawFloorplan();
-        </script>
-        {% else %}
-        <script>
-            const floorplanData = {{ floorplan_data | tojson }};
             const canvas = document.getElementById('floorplan-canvas');
             const ctx = canvas.getContext('2d');
             const selectedIndices = [];
@@ -100,7 +63,7 @@
             }
 
             function drawFloorplan() {
-                floorplanData.areas.forEach((area, index) => {
+                areas.forEach((area, index) => {
                     drawPolygon(area.poly, area.color);
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
@@ -111,7 +74,7 @@
             function handleCanvasClick(event) {
                 const x = event.offsetX;
                 const y = event.offsetY;
-                floorplanData.areas.forEach((area, index) => {
+                areas.forEach((area, index) => {
                     const path = new Path2D();
                     path.moveTo(area.poly[0].x, area.poly[0].y);
                     area.poly.slice(1).forEach(point => path.lineTo(point.x, point.y));
@@ -120,20 +83,17 @@
                     if (ctx.isPointInPath(path, x, y)) {
                         const selectedIndex = selectedIndices.indexOf(index);
                         if (selectedIndex === -1) {
-                            // Room is not selected, so select it
                             selectedIndices.push(index);
                             drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)'); // Highlight selected area
                         } else {
-                            // Room is already selected, so deselect it
                             selectedIndices.splice(selectedIndex, 1);
-                            drawPolygon(area.poly, area.color); // Re-draw the original area color
+                            drawPolygon(area.poly, area.color); // Re-draw original area color
                         }
                     }
                 });
 
-                // Re-draw all selected rooms to ensure they remain highlighted
                 selectedIndices.forEach(idx => {
-                    const area = floorplanData.areas[idx];
+                    const area = areas[idx];
                     drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
                 });
 
@@ -155,7 +115,6 @@
 
             drawFloorplan();
         </script>
-        {% endif %}
         {% endif %}
     </div>
 </body>

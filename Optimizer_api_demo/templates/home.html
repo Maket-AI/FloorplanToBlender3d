@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Floorplan Renovation Service - Home</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Floorplan Renovation Service</h1>
+
+        {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+        
+        <form id="upload-form" method="POST" enctype="multipart/form-data" action="/init_floorplan">
+            <div>
+                <label for="floorplanner_plan">Upload Floorplan JSON:</label>
+                <input type="file" id="floorplanner_plan" name="floorplanner_plan" required>
+            </div>
+            <br>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+</body>
+</html>

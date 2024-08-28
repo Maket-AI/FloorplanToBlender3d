@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Floorplan Renovation Service</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Floorplan Renovation Service</h1>
+
+        {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+
+        {% if unnamed_rooms %}
+        <h3>Add Names to Unnamed Rooms</h3>
+        <form id="add-names-form" method="POST" action="/add_room_names">
+            {% for index in unnamed_rooms %}
+            <div>
+                <label for="room_name_{{ index }}">Room {{ index }} Name:</label>
+                <input type="text" id="room_name_{{ index }}" name="room_name" required>
+                <input type="hidden" name="room_index" value="{{ index }}">
+            </div>
+            <br>
+            {% endfor %}
+            <button type="submit">Save Names</button>
+        </form>
+        {% else %}
+        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
+        <h3>Select Room Indices to Renovate:</h3>
+        <div id="selected-rooms"></div>
+        <form id="renovation-form" method="POST" action="/submit">
+            <input type="hidden" name="selected_indices" id="selected_indices" value="">
+            <div>
+                <label for="renovate_action">How to Renovate:</label>
+                <select id="renovate_action" name="renovate_action">
+                    <option value="" selected disabled>Select an action</option>
+                    <option value="add_rooms">Add Rooms</option>
+                    <option value="change_layout">Same Room Type but Change Layout</option>
+                    <option value="delete_room">Delete Room</option>
+                </select>
+            </div>
+            <br>
+            <div id="add_rooms_options" style="display:none;">
+                <label for="add_rooms">Add Rooms:</label>
+                <input type="text" id="add_rooms" name="add_rooms" placeholder="e.g., bedroom, bathroom">
+            </div>
+            <br>
+            <button type="submit">Submit</button>
+        </form>
+
+        <script>
+            const floorplanData = {{ floorplan_data | tojson }};
+            const canvas = document.getElementById('floorplan-canvas');
+            const ctx = canvas.getContext('2d');
+            const selectedIndices = [];
+
+            function drawPolygon(points, color) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            function drawFloorplan() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas
+                floorplanData.areas.forEach((area, index) => {
+                    drawPolygon(area.poly, area.color);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                });
+                // Re-draw all selected rooms to ensure they remain highlighted
+                selectedIndices.forEach(idx => {
+                    const area = floorplanData.areas[idx];
+                    drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(`${area.name} (${idx})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                });
+            }
+
+            function handleCanvasClick(event) {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                floorplanData.areas.forEach((area, index) => {
+                    const path = new Path2D();
+                    path.moveTo(area.poly[0].x, area.poly[0].y);
+                    area.poly.slice(1).forEach(point => path.lineTo(point.x, point.y));
+                    path.closePath();
+
+                    if (ctx.isPointInPath(path, x, y)) {
+                        const selectedIndex = selectedIndices.indexOf(index);
+                        if (selectedIndex === -1) {
+                            // Room is not selected, so select it
+                            selectedIndices.push(index);
+                        } else {
+                            // Room is already selected, so deselect it
+                            selectedIndices.splice(selectedIndex, 1);
+                        }
+                    }
+                });
+
+                drawFloorplan();  // Redraw the entire floorplan after selection change
+
+                document.getElementById('selected_indices').value = JSON.stringify(selectedIndices);
+                updateSelectedRoomsDisplay();
+            }
+
+            function updateSelectedRoomsDisplay() {
+                const selectedRoomsDiv = document.getElementById('selected-rooms');
+                selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
+            }
+
+            document.getElementById('renovate_action').addEventListener('change', function() {
+                const addRoomsOption = document.getElementById('add_rooms_options');
+                addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
+            });
+
+            canvas.addEventListener('click', handleCanvasClick);
+
+            drawFloorplan();
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>
