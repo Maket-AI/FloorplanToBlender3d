@@ -1,0 +1,157 @@
+{
+  "name": "Ｃ",
+  "lines": [],
+  "dimensions": [],
+  "labels": [],
+  "areas": [
+    {
+      "color": "#F2D8B0",
+      "showAreaLabel": true,
+      "poly": [
+        {
+          "x": 84.6200845425517,
+          "y": 1286.2473866469923
+        },
+        {
+          "x": 714.6200845425518,
+          "y": 1286.247386646992
+        },
+        {
+          "x": 714.6200845425516,
+          "y": -142.7526133530078
+        },
+        {
+          "x": 84.6200845425517,
+          "y": -142.75261335300772
+        }
+      ]
+    }
+  ],
+  "surfaces": [],
+  "items": [],
+  "walls": [
+    {
+      "a": {
+        "x": 722.1200845425516,
+        "y": -150.25261335300772
+      },
+      "b": {
+        "x": 722.1200845425517,
+        "y": 1293.747386646992
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 274.32
+      },
+      "bz": {
+        "z": 0,
+        "h": 274.32
+      },
+      "thickness": 15,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    },
+    {
+      "a": {
+        "x": 722.1200845425517,
+        "y": 1293.7473866469923
+      },
+      "b": {
+        "x": 77.1200845425517,
+        "y": 1293.7473866469923
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 274.32
+      },
+      "bz": {
+        "z": 0,
+        "h": 274.32
+      },
+      "thickness": 15,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    },
+    {
+      "a": {
+        "x": 77.12008454255171,
+        "y": -150.25261335300775
+      },
+      "b": {
+        "x": 722.1200845425516,
+        "y": -150.25261335300772
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 274.32
+      },
+      "bz": {
+        "z": 0,
+        "h": 274.32
+      },
+      "thickness": 15,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    },
+    {
+      "a": {
+        "x": 77.1200845425517,
+        "y": 1293.747386646992
+      },
+      "b": {
+        "x": 77.1200845425517,
+        "y": -150.25261335300775
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 274.32
+      },
+      "bz": {
+        "z": 0,
+        "h": 274.32
+      },
+      "thickness": 15,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    }
+  ],
+  "id": 259525059,
+  "settings": {
+    "engineAutoThickness": false,
+    "engineAutoDims": true,
+    "areaLabelMultiplier": 1,
+    "scaleMultiplierDimensions": 1.5,
+    "scaleMultiplierComments": 1,
+    "dimLineLabelHorizontal": false,
+    "showCeilings3D": true,
+    "minWallLength": 4
+  }
+}

@@ -22,9 +22,6 @@
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
 
-        <!-- Plot the floorplan first -->
-        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
-
         {% if unnamed_rooms %}
         <h3>Add Names to Unnamed Rooms</h3>
         <form id="add-names-form" method="POST" action="/add_room_names">
@@ -38,8 +35,67 @@
             {% endfor %}
             <button type="submit">Save Names</button>
         </form>
+
+        <!-- Plot the unnamed rooms with their indices -->
+        <canvas id="floorplan-canvas"></canvas>
+        <script>
+            const floorplanData = {{ floorplan_data | tojson }};
+            const canvas = document.getElementById('floorplan-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            floorplanData.areas.forEach(area => {
+                area.poly.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+            });
+
+            // Add some padding to the bounding box
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Calculate width and height
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            // Set canvas size dynamically
+            canvas.width = width;
+            canvas.height = height;
+
+            // Adjust the context to scale the content to fit within the canvas
+            ctx.translate(-minX, -minY);  // Translate context to fit all content
+
+            function drawPolygon(points, color) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            function drawFloorplan() {
+                ctx.clearRect(minX, minY, width, height);  // Clear the canvas
+                floorplanData.areas.forEach((area, index) => {
+                    drawPolygon(area.poly, area.color || 'rgba(200, 200, 200, 0.5)'); // Use default color if none provided
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(`Room ${index}`, area.poly[0].x + 5, area.poly[0].y - 5);
+                });
+            }
+
+            drawFloorplan();
+        </script>
         {% else %}
-        <!-- No unnamed rooms, show the renovation form directly -->
+        <canvas id="floorplan-canvas"></canvas>
         <h3>Select Room Indices to Renovate:</h3>
         <div id="selected-rooms"></div>
         <form id="renovation-form" method="POST" action="/submit">
@@ -61,13 +117,41 @@
             <br>
             <button type="submit">Submit</button>
         </form>
-        {% endif %}
 
         <script>
             const floorplanData = {{ floorplan_data | tojson }};
             const canvas = document.getElementById('floorplan-canvas');
             const ctx = canvas.getContext('2d');
             const selectedIndices = [];
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            floorplanData.areas.forEach(area => {
+                area.poly.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+            });
+
+            // Add some padding to the bounding box
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Calculate width and height
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            // Set canvas size dynamically
+            canvas.width = width;
+            canvas.height = height;
+
+            // Adjust the context to scale the content to fit within the canvas
+            ctx.translate(-minX, -minY);  // Translate context to fit all content
 
             function drawPolygon(points, color) {
                 ctx.fillStyle = color;
@@ -79,16 +163,13 @@
                 ctx.stroke();
             }
 
-            function drawFloorplan(showNames = false) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            function drawFloorplan() {
+                ctx.clearRect(minX, minY, width, height);  // Clear the canvas
                 floorplanData.areas.forEach((area, index) => {
-                    const isSelected = selectedIndices.includes(index);
-                    const color = isSelected ? 'rgba(0, 255, 0, 0.5)' : (area.color || 'lightgray');
-                    drawPolygon(area.poly, color);
+                    drawPolygon(area.poly, area.color);
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
-                    const label = showNames && area.name ? `${area.name} (${index})` : `Room ${index}`;
-                    ctx.fillText(label, area.poly[0].x + 5, area.poly[0].y - 5);
+                    ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
                 });
             }
 
@@ -107,13 +188,18 @@
                         const selectedIndex = selectedIndices.indexOf(index);
                         if (selectedIndex === -1) {
                             selectedIndices.push(index);
+                            drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)'); // Highlight selected area
                         } else {
                             selectedIndices.splice(selectedIndex, 1);
+                            drawPolygon(area.poly, area.color); // Re-draw the original area color
                         }
                     }
                 });
 
-                drawFloorplan(true);
+                selectedIndices.forEach(idx => {
+                    const area = floorplanData.areas[idx];
+                    drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
+                });
 
                 document.getElementById('selected_indices').value = JSON.stringify(selectedIndices);
                 updateSelectedRoomsDisplay();
@@ -121,27 +207,19 @@
 
             function updateSelectedRoomsDisplay() {
                 const selectedRoomsDiv = document.getElementById('selected-rooms');
-                if (selectedRoomsDiv) {
-                    selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
-                }
+                selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
             }
 
-            // Ensure the event listener is added only when the element exists
-            const renovationActionElement = document.getElementById('renovate_action');
-            if (renovationActionElement) {
-                renovationActionElement.addEventListener('change', function() {
-                    const addRoomsOption = document.getElementById('add_rooms_options');
-                    if (addRoomsOption) {
-                        addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
-                    }
-                });
-            }
+            document.getElementById('renovate_action').addEventListener('change', function() {
+                const addRoomsOption = document.getElementById('add_rooms_options');
+                addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
+            });
 
             canvas.addEventListener('click', handleCanvasClick);
 
-            // Draw floorplan initially with names if they exist, otherwise with only indices
-            drawFloorplan({{ 'false' if unnamed_rooms else 'true' }});
+            drawFloorplan();
         </script>
+        {% endif %}
     </div>
 </body>
 </html>

@@ -12,47 +12,67 @@
             color: red;
             font-weight: bold;
         }
+        .renovate-button {
+            font-size: 20px;
+            background-color: green;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .renovate-button:hover {
+            background-color: darkgreen;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Renovated Floorplan</h1>
+        <h1>Floorplan Renovation Service</h1>
+        <button onclick="window.location.href='/'" class="renovate-button">Renovate Other Plans</button>
 
         {% if error_message %}
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
 
         {% if areas %}
-        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
-        <h3>Select Room Indices to Renovate:</h3>
-        <div id="selected-rooms"></div>
-        <form id="renovation-form" method="POST" action="/submit">
-            <input type="hidden" name="selected_indices" id="selected_indices" value="">
-            <div>
-                <label for="renovate_action">How to Renovate:</label>
-                <select id="renovate_action" name="renovate_action">
-                    <option value="" selected disabled>Select an action</option>
-                    <option value="add_rooms">Add Rooms</option>
-                    <option value="change_layout">Change Layout</option>
-                    <option value="delete_room">Delete Room</option>
-                </select>
-            </div>
-            <br>
-            <div id="add_rooms_options" style="display:none;">
-                <label for="add_rooms">Add Rooms:</label>
-                <input type="text" id="add_rooms" name="add_rooms" placeholder="e.g., bedroom, bathroom">
-            </div>
-            <br>
-            <button type="submit">Submit</button>
-        </form>
+        <canvas id="floorplan-canvas"></canvas>
 
         <script>
             const areas = {{ areas | tojson }};
             const canvas = document.getElementById('floorplan-canvas');
             const ctx = canvas.getContext('2d');
-            const selectedIndices = [];
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            areas.forEach(area => {
+                area.poly.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+            });
+
+            // Add padding
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Calculate canvas size
+            const width = maxX - minX;
+            const height = maxY - minY;
+            canvas.width = width;
+            canvas.height = height;
+
+            // Translate context
+            ctx.translate(-minX, -minY);
 
             function drawPolygon(points, color) {
+                if (points.length === 0) return; // Do not draw if points are empty
                 ctx.fillStyle = color;
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, points[0].y);
@@ -63,55 +83,16 @@
             }
 
             function drawFloorplan() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
                 areas.forEach((area, index) => {
                     drawPolygon(area.poly, area.color);
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
-                    ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
-                });
-            }
-
-            function handleCanvasClick(event) {
-                const x = event.offsetX;
-                const y = event.offsetY;
-                areas.forEach((area, index) => {
-                    const path = new Path2D();
-                    path.moveTo(area.poly[0].x, area.poly[0].y);
-                    area.poly.slice(1).forEach(point => path.lineTo(point.x, point.y));
-                    path.closePath();
-
-                    if (ctx.isPointInPath(path, x, y)) {
-                        const selectedIndex = selectedIndices.indexOf(index);
-                        if (selectedIndex === -1) {
-                            selectedIndices.push(index);
-                            drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)'); // Highlight selected area
-                        } else {
-                            selectedIndices.splice(selectedIndex, 1);
-                            drawPolygon(area.poly, area.color); // Re-draw original area color
-                        }
+                    if (area.poly.length > 0) {
+                        ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
                     }
                 });
-
-                selectedIndices.forEach(idx => {
-                    const area = areas[idx];
-                    drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
-                });
-
-                document.getElementById('selected_indices').value = JSON.stringify(selectedIndices);
-                updateSelectedRoomsDisplay();
             }
-
-            function updateSelectedRoomsDisplay() {
-                const selectedRoomsDiv = document.getElementById('selected-rooms');
-                selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
-            }
-
-            document.getElementById('renovate_action').addEventListener('change', function() {
-                const addRoomsOption = document.getElementById('add_rooms_options');
-                addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
-            });
-
-            canvas.addEventListener('click', handleCanvasClick);
 
             drawFloorplan();
         </script>

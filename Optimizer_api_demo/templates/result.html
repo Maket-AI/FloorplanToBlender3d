@@ -3,39 +3,62 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Renovated Floorplan Result</title>
+    <title>Final Floorplan</title>
     <style>
         canvas {
             border: 1px solid black;
         }
-        .renovate-button {
-            display: block;
-            margin: 20px 0;
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .renovate-button:hover {
-            background-color: #45a049;
+        .error-message {
+            color: red;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Renovated Floorplan Result</h1>
-        <button class="renovate-button" onclick="window.location.href='/'">Renovate Other Plans</button>
+        <h1>Renovated Floorplan</h1>
+        <a href="/home" style="font-size: 20px; display: inline-block; margin-bottom: 20px;">Renovate Other Plans</a>
+
+        {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+        {% endif %}
 
         {% if areas %}
-        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
+        <canvas id="floorplan-canvas"></canvas>
 
         <script>
             const areas = {{ areas | tojson }};
             const canvas = document.getElementById('floorplan-canvas');
             const ctx = canvas.getContext('2d');
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            areas.forEach(area => {
+                area.poly.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+            });
+
+            // Add some padding to the bounding box
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Calculate width and height
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            // Set canvas size dynamically
+            canvas.width = width;
+            canvas.height = height;
+
+            // Adjust the context to scale the content to fit within the canvas
+            ctx.translate(-minX, -minY);  // Translate context to fit all content
 
             function drawPolygon(points, color) {
                 ctx.fillStyle = color;
@@ -58,8 +81,6 @@
 
             drawFloorplan();
         </script>
-        {% else %}
-        <p>No floorplan areas to display.</p>
         {% endif %}
     </div>
 </body>
