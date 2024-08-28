@@ -12,12 +12,26 @@
             color: red;
             font-weight: bold;
         }
+        .renovate-button {
+            font-size: 20px;
+            background-color: green;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .renovate-button:hover {
+            background-color: darkgreen;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Renovated Floorplan</h1>
-        <a href="/home" style="font-size: 20px; display: inline-block; margin-bottom: 20px;">Renovate Other Plans</a>
+        <h1>Floorplan Renovation Service 
+            <button onclick="window.location.href='/'" class="renovate-button">Renovate Other Plans</button>
+        </h1>
 
         {% if error_message %}
         <p class="error-message">{{ error_message }}</p>
@@ -42,25 +56,24 @@
                 });
             });
 
-            // Add some padding to the bounding box
+            // Add padding
             const padding = 50;
             minX -= padding;
             minY -= padding;
             maxX += padding;
             maxY += padding;
 
-            // Calculate width and height
+            // Calculate canvas size
             const width = maxX - minX;
             const height = maxY - minY;
-
-            // Set canvas size dynamically
             canvas.width = width;
             canvas.height = height;
 
-            // Adjust the context to scale the content to fit within the canvas
-            ctx.translate(-minX, -minY);  // Translate context to fit all content
+            // Translate context
+            ctx.translate(-minX, -minY);
 
             function drawPolygon(points, color) {
+                if (points.length === 0) return; // Do not draw if points are empty
                 ctx.fillStyle = color;
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, points[0].y);
@@ -71,11 +84,14 @@
             }
 
             function drawFloorplan() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
                 areas.forEach((area, index) => {
                     drawPolygon(area.poly, area.color);
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
-                    ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                    if (area.poly.length > 0) {
+                        ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                    }
                 });
             }
 
