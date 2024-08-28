@@ -22,6 +22,9 @@
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
 
+        <!-- Plot the floorplan first -->
+        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
+
         {% if unnamed_rooms %}
         <h3>Add Names to Unnamed Rooms</h3>
         <form id="add-names-form" method="POST" action="/add_room_names">
@@ -36,7 +39,7 @@
             <button type="submit">Save Names</button>
         </form>
         {% else %}
-        <canvas id="floorplan-canvas" width="1200" height="800"></canvas>
+        <!-- No unnamed rooms, show the renovation form directly -->
         <h3>Select Room Indices to Renovate:</h3>
         <div id="selected-rooms"></div>
         <form id="renovation-form" method="POST" action="/submit">
@@ -58,6 +61,7 @@
             <br>
             <button type="submit">Submit</button>
         </form>
+        {% endif %}
 
         <script>
             const floorplanData = {{ floorplan_data | tojson }};
@@ -75,21 +79,16 @@
                 ctx.stroke();
             }
 
-            function drawFloorplan() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);  // Clear the canvas
+            function drawFloorplan(showNames = false) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 floorplanData.areas.forEach((area, index) => {
-                    drawPolygon(area.poly, area.color);
+                    const isSelected = selectedIndices.includes(index);
+                    const color = isSelected ? 'rgba(0, 255, 0, 0.5)' : (area.color || 'lightgray');
+                    drawPolygon(area.poly, color);
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
-                    ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
-                });
-                // Re-draw all selected rooms to ensure they remain highlighted
-                selectedIndices.forEach(idx => {
-                    const area = floorplanData.areas[idx];
-                    drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
-                    ctx.fillStyle = "#000";
-                    ctx.font = "14px Arial";
-                    ctx.fillText(`${area.name} (${idx})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                    const label = showNames && area.name ? `${area.name} (${index})` : `Room ${index}`;
+                    ctx.fillText(label, area.poly[0].x + 5, area.poly[0].y - 5);
                 });
             }
 
@@ -107,16 +106,14 @@
                     if (ctx.isPointInPath(path, x, y)) {
                         const selectedIndex = selectedIndices.indexOf(index);
                         if (selectedIndex === -1) {
-                            // Room is not selected, so select it
                             selectedIndices.push(index);
                         } else {
-                            // Room is already selected, so deselect it
                             selectedIndices.splice(selectedIndex, 1);
                         }
                     }
                 });
 
-                drawFloorplan();  // Redraw the entire floorplan after selection change
+                drawFloorplan(true);
 
                 document.getElementById('selected_indices').value = JSON.stringify(selectedIndices);
                 updateSelectedRoomsDisplay();
@@ -124,19 +121,27 @@
 
             function updateSelectedRoomsDisplay() {
                 const selectedRoomsDiv = document.getElementById('selected-rooms');
-                selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
+                if (selectedRoomsDiv) {
+                    selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
+                }
             }
 
-            document.getElementById('renovate_action').addEventListener('change', function() {
-                const addRoomsOption = document.getElementById('add_rooms_options');
-                addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
-            });
+            // Ensure the event listener is added only when the element exists
+            const renovationActionElement = document.getElementById('renovate_action');
+            if (renovationActionElement) {
+                renovationActionElement.addEventListener('change', function() {
+                    const addRoomsOption = document.getElementById('add_rooms_options');
+                    if (addRoomsOption) {
+                        addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
+                    }
+                });
+            }
 
             canvas.addEventListener('click', handleCanvasClick);
 
-            drawFloorplan();
+            // Draw floorplan initially with names if they exist, otherwise with only indices
+            drawFloorplan({{ 'false' if unnamed_rooms else 'true' }});
         </script>
-        {% endif %}
     </div>
 </body>
 </html>
