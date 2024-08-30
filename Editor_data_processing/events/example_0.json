@@ -1,0 +1,119 @@
+{
+    "flow":"RECOGNIZED_PLAN",
+    "version":1,
+    "data":[
+       {
+          "cameras":[
+             
+          ],
+          "updated_at":"2024-06-27T21:33:00.000Z",
+          "project_id":159292272,
+          "level":0,
+          "name":"First Floor",
+          "created_at":"2024-06-27T21:32:48.000Z",
+          "id":243041727,
+          "designs":[
+             {
+                "settings":{
+                   "minWallLength":1,
+                   "scaleMultiplierComments":1,
+                   "scaleMultiplierDimensions":1.5,
+                   "showCeilings3D":true,
+                   "areaLabelMultiplier":1,
+                   "engineAutoDims":true,
+                   "engineAutoThickness":false
+                },
+                "walls":[
+                   {
+                      "a":{
+                         "x":62,
+                         "y":429
+                      },
+                      "b":{
+                         "x":717,
+                         "y":429
+                      },
+                      "c":"None",
+                      "balance":0.5,
+                      "thickness":25,
+                      "decor":{
+                         "outline":0,
+                         "right":"None",
+                         "top":"None",
+                         "left":"None"
+                      },
+                      "bz":{
+                         "h":280,
+                         "z":0
+                      },
+                      "az":{
+                         "h":280,
+                         "z":0
+                      },
+                      "openings":[
+                         
+                      ]
+                   },
+                   {
+                      "a":{
+                         "x":62,
+                         "y":429
+                      },
+                      "b":{
+                         "x":62,
+                         "y":1301
+                      },
+                      "c":"None",
+                      "balance":0.5,
+                      "thickness":65,
+                      "decor":{
+                         "outline":0,
+                         "right":"None",
+                         "top":"None",
+                         "left":"None"
+                      },
+                      "bz":{
+                         "h":280,
+                         "z":0
+                      },
+                      "az":{
+                         "h":280,
+                         "z":0
+                      },
+                      "openings":[
+                         
+                      ]
+                   }
+                ],
+                "surfaces":[
+                   
+                ],
+                "name":"First design",
+                "areas":[
+                   
+                ],
+                "id":257679183,
+                "lines":[
+                   
+                ],
+                "items":[
+                   
+                ],
+                "dimensions":[
+                   
+                ],
+                "labels":[
+                   
+                ]
+             }
+          ],
+          "height":28000
+       }
+    ],
+    "userID":"667dd4ab2acfab42d3a992c6",
+    "saveID":"667dd4ab2acfab42d3a992c6:::667dda7e229c6595aa48ce93",
+    "source":"UNDEFINED",
+    "savedAt":1719523983.2303438,
+    "thumbnail":"No Thumbnail",
+    "designId":"667dda7e229c6595aa48ce93"
+ }

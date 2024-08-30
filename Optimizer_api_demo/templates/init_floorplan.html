@@ -24,6 +24,7 @@
 
         {% if unnamed_rooms %}
         <h3>Add Names to Unnamed Rooms</h3>
+        <canvas id="floorplan-canvas"></canvas>
         <form id="add-names-form" method="POST" action="/add_room_names">
             {% for index in unnamed_rooms %}
             <div>
@@ -36,8 +37,6 @@
             <button type="submit">Save Names</button>
         </form>
 
-        <!-- Plot the unnamed rooms with their indices -->
-        <canvas id="floorplan-canvas"></canvas>
         <script>
             const floorplanData = {{ floorplan_data | tojson }};
             const canvas = document.getElementById('floorplan-canvas');
@@ -73,7 +72,7 @@
             ctx.translate(-minX, -minY);  // Translate context to fit all content
 
             function drawPolygon(points, color) {
-                ctx.fillStyle = color;
+                ctx.fillStyle = color || 'rgba(200, 200, 200, 0.5)'; // Use default color if none provided
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, points[0].y);
                 points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
@@ -85,7 +84,7 @@
             function drawFloorplan() {
                 ctx.clearRect(minX, minY, width, height);  // Clear the canvas
                 floorplanData.areas.forEach((area, index) => {
-                    drawPolygon(area.poly, area.color || 'rgba(200, 200, 200, 0.5)'); // Use default color if none provided
+                    drawPolygon(area.poly, area.color);
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
                     ctx.fillText(`Room ${index}`, area.poly[0].x + 5, area.poly[0].y - 5);
@@ -98,23 +97,18 @@
         <canvas id="floorplan-canvas"></canvas>
         <h3>Select Room Indices to Renovate:</h3>
         <div id="selected-rooms"></div>
-        <form id="renovation-form" method="POST" action="/submit">
+        <form id="renovation-form" method="POST" action="{{ url_for('process_' + selected_option) }}">
             <input type="hidden" name="selected_indices" id="selected_indices" value="">
-            <div>
-                <label for="renovate_action">How to Renovate:</label>
-                <select id="renovate_action" name="renovate_action">
-                    <option value="" selected disabled>Select an action</option>
-                    <option value="add_rooms">Add Rooms</option>
-                    <option value="change_layout">Same Room Type but Change Layout</option>
-                    <option value="delete_room">Delete Room</option>
-                </select>
-            </div>
-            <br>
-            <div id="add_rooms_options" style="display:none;">
+
+            {% if selected_option == 'option3' or selected_option == 'option4' %}
+            <!-- Add rooms input block for Options 3 and 4 -->
+            <div id="add_rooms_options">
                 <label for="add_rooms">Add Rooms:</label>
                 <input type="text" id="add_rooms" name="add_rooms" placeholder="e.g., bedroom, bathroom">
             </div>
             <br>
+            {% endif %}
+            
             <button type="submit">Submit</button>
         </form>
 
@@ -169,7 +163,7 @@
                     drawPolygon(area.poly, area.color);
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
-                    ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                    ctx.fillText(`${area.name || 'Room'} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
                 });
             }
 
@@ -209,11 +203,6 @@
                 const selectedRoomsDiv = document.getElementById('selected-rooms');
                 selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
             }
-
-            document.getElementById('renovate_action').addEventListener('change', function() {
-                const addRoomsOption = document.getElementById('add_rooms_options');
-                addRoomsOption.style.display = this.value === 'add_rooms' ? 'block' : 'none';
-            });
 
             canvas.addEventListener('click', handleCanvasClick);
 

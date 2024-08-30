@@ -27,9 +27,11 @@ def init_floorplan():
             unnamed_rooms = [idx for idx, area in enumerate(stored_floorplan_data['areas']) if not area.get('name')]
 
             if unnamed_rooms:
+                # If there are unnamed rooms, prompt user to add room names
                 return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data, unnamed_rooms=unnamed_rooms)
 
-            return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data)
+            # If all rooms have names, redirect to options page
+            return redirect(url_for('options'))
         except Exception as e:
             print(f"Error processing file: {e}")
             return "Error processing file", 400
@@ -48,52 +50,114 @@ def add_room_names():
     for idx, room_name in zip(unnamed_rooms, room_names):
         stored_floorplan_data['areas'][int(idx)]['name'] = room_name
 
-    return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data)
+    # After adding room names, redirect to options page
+    return redirect(url_for('options'))
 
-@app.route('/submit', methods=['POST'])
-def submit():
-    """Submit the renovated floorplan"""
+@app.route('/options', methods=['GET', 'POST'])
+def options():
+    """Display options for the user to select the renovation type"""
+    if request.method == 'POST':
+        selected_option = request.form.get('option')
+        print(f"Selected option: {selected_option}")
+        if selected_option == 'option1':
+            return redirect(url_for('process_option1'))
+        elif selected_option == 'option2':
+            return redirect(url_for('process_option2'))
+        elif selected_option == 'option3':
+            return redirect(url_for('process_option3'))
+        elif selected_option == 'option4':
+            return redirect(url_for('process_option4'))
+        else:
+            return "Invalid option selected", 400
+    
+    # Render the options page
+    return render_template('options.html')
+
+@app.route('/process_option1', methods=['GET', 'POST'])
+def process_option1():
+    """Process Option 1: Review a floorplan in its entirety"""
     global stored_floorplan_data
-    if not stored_floorplan_data:
-        return "No floorplan data found", 400
-
-    print("Request submission")
-
-    selected_indices = request.form.get('selected_indices')
-    action = request.form.get('renovate_action')
-
-    print(f"Selected indices received: {selected_indices}")
-    print(f"Renovation action: {action}")
-
-    try:
-        selected_indices = json.loads(selected_indices)
-    except json.JSONDecodeError as e:
-        print(f"JSON decode error: {str(e)}")
-        return f"JSON decode error: {str(e)}"
-
-    renovate_change = {
-        "delete": [],
-        "add": []
-    }
-
-    if action == 'add_rooms':
-        rooms_to_add = request.form.get('add_rooms').split(',')
-        renovate_change['add'] = [room.strip() for room in rooms_to_add]
-    elif action == 'delete_room':
-        renovate_change['delete'] = selected_indices
-
+    indices = list(range(len(stored_floorplan_data['areas'])))
     result_json = {
         "data": stored_floorplan_data,
-        "renovate_id_set": selected_indices,
-        "renovate_change": renovate_change
+        "renovate_id_set": indices,
+        "renovate_change": {
+            "delete": [],
+            "add": []
+        }
     }
-    print("finish json")
-    file_path = os.path.join(os.getcwd(), 'optimizer_input.json')
-    with open(file_path, 'w') as f:
-        json.dump(result_json, f, indent=4)
+    return call_lambda(result_json)
 
-    print(f"Saved result JSON to {file_path}")
+@app.route('/process_option2', methods=['GET', 'POST'])
+def process_option2():
+    """Process Option 2: Review just a part of the floorplan"""
+    global stored_floorplan_data
+    if request.method == 'POST':
+        selected_indices = request.form.get('selected_indices')
+        try:
+            selected_indices = json.loads(selected_indices)
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {str(e)}")
+            return f"JSON decode error: {str(e)}"
 
+        result_json = {
+            "data": stored_floorplan_data,
+            "renovate_id_set": selected_indices,
+            "renovate_change": {
+                "delete": [],
+                "add": []
+            }
+        }
+        return call_lambda(result_json)
+    # Render without the option selection
+    return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data, selected_option='option2')
+
+
+@app.route('/process_option3', methods=['GET', 'POST'])
+def process_option3():
+    """Process Option 3: Fill an empty space with just the exterior walls"""
+    global stored_floorplan_data
+    if request.method == 'POST':
+        rooms_to_add = request.form.get('add_rooms').split(',')
+        result_json = {
+            "data": stored_floorplan_data,
+            "renovate_id_set": [0],
+            "renovate_change": {
+                "delete": [],
+                "add": [room.strip() for room in rooms_to_add]
+            }
+        }
+        return call_lambda(result_json)
+    # Directly select all rooms for this option
+    return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data, selected_option='option3')
+
+@app.route('/process_option4', methods=['GET', 'POST'])
+def process_option4():
+    """Process Option 4: Fill an empty space in a section of the floorplan"""
+    global stored_floorplan_data
+    if request.method == 'POST':
+        selected_indices = request.form.get('selected_indices')
+        rooms_to_add = request.form.get('add_rooms').split(',')
+        try:
+            selected_indices = json.loads(selected_indices)
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {str(e)}")
+            return f"JSON decode error: {str(e)}"
+
+        result_json = {
+            "data": stored_floorplan_data,
+            "renovate_id_set": selected_indices,
+            "renovate_change": {
+                "delete": [],
+                "add": [room.strip() for room in rooms_to_add]
+            }
+        }
+        return call_lambda(result_json)
+    return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data, selected_option='option4')
+
+def call_lambda(result_json):
+    """Call AWS Lambda function with the result JSON"""
+    print("Calling Lambda with result JSON:", result_json)
     try:
         response = lambda_client.invoke(
             FunctionName='dev-asyncPlanGenStack-OptimizerFunction-pvcuXetLNgvZ',
@@ -109,7 +173,6 @@ def submit():
             if "response" in response_body and "floors" in response_body["response"]:
                 areas = response_body["response"]["floors"][0]['designs'][0]['areas']
                 print(f"areas is {areas}")
-                # Redirect to the result page after successful processing
                 return redirect(url_for('result', areas=json.dumps(areas)))
             else:
                 return render_template('submit.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: unexpected response from the Lambda function.")
