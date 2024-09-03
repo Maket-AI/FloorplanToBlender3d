@@ -145,3 +145,7 @@ editor/
 
 # Ignore local DynamoDB data file
 dynamodb_data.json
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
