@@ -156,9 +156,15 @@ def process_option4():
     return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data, selected_option='option4')
 
 def call_lambda(result_json):
-    """Call AWS Lambda function with the result JSON"""
-    print("Calling Lambda with result JSON:", result_json)
+    """Call AWS Lambda function with the result JSON and save it locally"""
+    # Save the result JSON to a local file
     try:
+        with open('result_json_backup.json', 'w') as file:
+            json.dump(result_json, file, indent=4)
+        print("Result JSON saved locally as 'result_json_backup.json'.")
+
+        # Proceed to call the Lambda function
+        print("Calling Lambda with result JSON:", result_json)
         response = lambda_client.invoke(
             FunctionName='dev-asyncPlanGenStack-OptimizerFunction-pvcuXetLNgvZ',
             InvocationType='RequestResponse',
@@ -172,7 +178,7 @@ def call_lambda(result_json):
             response_body = json.loads(response_payload['body'])
             if "response" in response_body and "floors" in response_body["response"]:
                 areas = response_body["response"]["floors"][0]['designs'][0]['areas']
-                print(f"areas is {areas}")
+                print(f"Areas are: {areas}")
                 return redirect(url_for('result', areas=json.dumps(areas)))
             else:
                 return render_template('submit.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: unexpected response from the Lambda function.")
@@ -180,7 +186,9 @@ def call_lambda(result_json):
             return render_template('submit.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: unexpected response format from the Lambda function.")
 
     except Exception as e:
+        print(f"An error occurred: {e}")
         return render_template('submit.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: could not process the request.")
+
 
 @app.route('/result', methods=['GET'])
 def result():
