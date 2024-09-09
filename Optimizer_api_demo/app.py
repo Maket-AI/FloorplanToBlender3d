@@ -2,11 +2,15 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for
 import json
 import boto3
 import os
+import time  # Import the time module
+from botocore.config import Config
 
 app = Flask(__name__)
 
 stored_floorplan_data = None
-lambda_client = boto3.client('lambda', region_name='ca-central-1')
+config = Config(connect_timeout=5, read_timeout=300)  # 5 seconds for connection, 900 seconds for reading
+lambda_client = boto3.client('lambda', region_name='ca-central-1', config=config)
+
 
 @app.route('/', methods=['GET'])
 def home():
@@ -155,10 +159,13 @@ def process_option4():
         return call_lambda(result_json)
     return render_template('init_floorplan.html', floorplan_data=stored_floorplan_data, selected_option='option4')
 
+
 def call_lambda(result_json):
     """Call AWS Lambda function with the result JSON and save it locally"""
     # Save the result JSON to a local file
     try:
+        start_time = time.time()  # Start time measurement
+
         with open('result_json_backup.json', 'w') as file:
             json.dump(result_json, file, indent=4)
         print("Result JSON saved locally as 'result_json_backup.json'.")
@@ -173,6 +180,10 @@ def call_lambda(result_json):
 
         response_payload = response['Payload'].read().decode('utf-8')
         response_payload = json.loads(response_payload)
+
+        end_time = time.time()  # End time measurement
+        runtime = end_time - start_time
+        print(f"Lambda invocation runtime: {runtime:.2f} seconds.")  # Print the runtime
 
         if isinstance(response_payload, dict) and 'body' in response_payload:
             response_body = json.loads(response_payload['body'])
