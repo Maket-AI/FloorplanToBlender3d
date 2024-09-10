@@ -7,6 +7,8 @@
     <style>
         canvas {
             border: 1px solid black;
+            max-width: 100%;
+            height: auto;
         }
         .error-message {
             color: red;
@@ -29,75 +31,124 @@
 </head>
 <body>
     <div class="container">
-        <h1>Floorplan Renovation Service 
-            <button onclick="window.location.href='/'" class="renovate-button">Upload Another Floorplan</button>
-        </h1>
+        <h1>Floorplan Renovation Service</h1>
+        <button onclick="window.location.href='/'" class="renovate-button">Upload Another Floorplan</button>
+
+        <p id="status">Please wait while processing...</p> <!-- Status message area -->
 
         {% if error_message %}
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
 
-        {% if areas %}
-        <canvas id="floorplan-canvas"></canvas>
+        <canvas id="floorplan-canvas" style="display:none;"></canvas> <!-- Initially hidden canvas for drawing -->
 
         <script>
-            const areas = {{ areas | tojson }};
-            const canvas = document.getElementById('floorplan-canvas');
-            const ctx = canvas.getContext('2d');
+            const jobId = "{{ job_id }}";  // Pass the job_id to JavaScript
 
-            // Calculate bounding box
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            areas.forEach(area => {
-                area.poly.forEach(point => {
-                    if (point.x < minX) minX = point.x;
-                    if (point.y < minY) minY = point.y;
-                    if (point.x > maxX) maxX = point.x;
-                    if (point.y > maxY) maxY = point.y;
-                });
-            });
-
-            // Add padding
-            const padding = 50;
-            minX -= padding;
-            minY -= padding;
-            maxX += padding;
-            maxY += padding;
-
-            // Calculate canvas size
-            const width = maxX - minX;
-            const height = maxY - minY;
-            canvas.width = width;
-            canvas.height = height;
-
-            // Translate context
-            ctx.translate(-minX, -minY);
-
-            function drawPolygon(points, color) {
-                if (points.length === 0) return; // Do not draw if points are empty
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.moveTo(points[0].x, points[0].y);
-                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
-                ctx.closePath();
-                ctx.fill();
-                ctx.stroke();
+            function checkJobStatus() {
+                fetch(`/check_status/${jobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'complete') {
+                            // Job completed, update the page with results
+                            document.getElementById('status').innerText = 'Processing complete';
+                            displayResult(data.result);  // Function to display the result
+                        } else if (data.status === 'in progress') {
+                            // Job still in progress, keep polling
+                            setTimeout(checkJobStatus, 30000);  // Retry after 30 seconds
+                        } else {
+                            document.getElementById('status').innerText = 'Job not found or an error occurred.';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching job status:', error);
+                        document.getElementById('status').innerText = 'Error checking job status. Retrying...';
+                        setTimeout(checkJobStatus, 30000);  // Retry after 30 seconds in case of error
+                    });
             }
 
-            function drawFloorplan() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
-                areas.forEach((area, index) => {
-                    drawPolygon(area.poly, area.color);
-                    ctx.fillStyle = "#000";
-                    ctx.font = "14px Arial";
-                    if (area.poly.length > 0) {
-                        ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
-                    }
+            function displayResult(result) {
+                // Show the canvas element
+                const canvas = document.getElementById('floorplan-canvas');
+                canvas.style.display = 'block';
+                const ctx = canvas.getContext('2d');
+
+                // Parse result and update the canvas
+                const areas = JSON.parse(result).areas; // Assuming result is a JSON string with an 'areas' attribute
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+                areas.forEach(area => {
+                    area.poly.forEach(point => {
+                        if (point.x < minX) minX = point.x;
+                        if (point.y < minY) minY = point.y;
+                        if (point.x > maxX) maxX = point.x;
+                        if (point.y > maxY) maxY = point.y;
+                    });
                 });
+
+                // Add padding
+                const padding = 50;
+                minX -= padding;
+                minY -= padding;
+                maxX += padding;
+                maxY += padding;
+
+                // Calculate canvas size based on window size
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                const aspectRatio = (maxX - minX) / (maxY - minY);
+
+                if (windowWidth / aspectRatio > windowHeight) {
+                    canvas.height = windowHeight - 100; // Leave some space for other elements
+                    canvas.width = canvas.height * aspectRatio;
+                } else {
+                    canvas.width = windowWidth - 50; // Leave some space for other elements
+                    canvas.height = canvas.width / aspectRatio;
+                }
+
+                // Translate context
+                ctx.translate(-minX, -minY);
+
+                function drawPolygon(points, color) {
+                    if (points.length === 0) return; // Do not draw if points are empty
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                function getCentroid(points) {
+                    let x = 0, y = 0;
+                    const numPoints = points.length;
+                    points.forEach(point => {
+                        x += point.x;
+                        y += point.y;
+                    });
+                    return { x: x / numPoints, y: y / numPoints };
+                }
+
+                function drawFloorplan() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
+                    areas.forEach((area, index) => {
+                        drawPolygon(area.poly, area.color);
+                        ctx.fillStyle = "#000";
+                        ctx.font = "14px Arial";
+                        if (area.poly.length > 0) {
+                            const centroid = getCentroid(area.poly);
+                            ctx.fillText(`${area.name} (${index})`, centroid.x, centroid.y);
+                        }
+                    });
+                }
+
+                drawFloorplan();
             }
 
-            drawFloorplan();
+            // Initial status check
+            checkJobStatus();
         </script>
-        {% endif %}
     </div>
 </body>
 </html>

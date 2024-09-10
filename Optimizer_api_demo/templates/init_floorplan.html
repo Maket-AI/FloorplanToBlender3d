@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Floorplan Renovation Service</title>
     <style>
         canvas {
@@ -97,7 +97,7 @@
         <canvas id="floorplan-canvas"></canvas>
         <h3>Select Room Indices to Renovate:</h3>
         <div id="selected-rooms"></div>
-        <form id="renovation-form" method="POST" action="{{ url_for('process_' + selected_option) }}">
+        <form id="renovation-form" method="POST" action="{{ url_for('process_option' + selected_option[-1]) }}">
             <input type="hidden" name="selected_indices" id="selected_indices" value="">
 
             {% if selected_option == 'option3' or selected_option == 'option4' %}

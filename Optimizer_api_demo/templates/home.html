@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Floorplan Renovation Service - Home</title>
     <style>
         canvas {
@@ -18,14 +18,16 @@
     <div class="container">
         <h1>Floorplan Renovation Service</h1>
 
+        <!-- Display error message if any -->
         {% if error_message %}
         <p class="error-message">{{ error_message }}</p>
         {% endif %}
         
+        <!-- Form for uploading floorplan JSON -->
         <form id="upload-form" method="POST" enctype="multipart/form-data" action="/init_floorplan">
             <div>
                 <label for="floorplanner_plan">Upload Floorplan JSON:</label>
-                <input type="file" id="floorplanner_plan" name="floorplanner_plan" required>
+                <input type="file" id="floorplanner_plan" name="floorplanner_plan" accept=".json" required>
             </div>
             <br>
             <button type="submit">Upload</button>

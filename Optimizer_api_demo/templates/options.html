@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Floorplan Renovation Options</title>
     <style>
         body {
@@ -46,7 +46,7 @@
 <body>
     <div class="container">
         <h1>Choose a Renovation Option</h1>
-        <form method="POST" action="/options">
+        <form method="POST" action="{{ url_for('options') }}">
             <label for="option">Select an Option:</label>
             <select id="option" name="option" required>
                 <option value="" disabled selected>Select your option</option>

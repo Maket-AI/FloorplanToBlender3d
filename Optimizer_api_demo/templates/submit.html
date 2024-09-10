@@ -29,8 +29,11 @@
 </head>
 <body>
     <div class="container">
-        <h1>Floorplan Renovation Service</h1>
-        <button onclick="window.location.href='/'" class="renovate-button">Upload Another Floorplan</button>
+        <h1>Floorplan Renovation Service 
+            <button onclick="window.location.href='/'" class="renovate-button">Upload Another Floorplan</button>
+        </h1>
+
+        <div id="status-message">Please wait, processing your request...</div>
 
         {% if error_message %}
         <p class="error-message">{{ error_message }}</p>
@@ -82,6 +85,16 @@
                 ctx.stroke();
             }
 
+            function getCentroid(points) {
+                let x = 0, y = 0;
+                const numPoints = points.length;
+                points.forEach(point => {
+                    x += point.x;
+                    y += point.y;
+                });
+                return { x: x / numPoints, y: y / numPoints };
+            }
+
             function drawFloorplan() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
                 areas.forEach((area, index) => {
@@ -89,12 +102,65 @@
                     ctx.fillStyle = "#000";
                     ctx.font = "14px Arial";
                     if (area.poly.length > 0) {
-                        ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                        const centroid = getCentroid(area.poly);
+                        ctx.fillText(`${area.name} (${index})`, centroid.x, centroid.y);
                     }
                 });
             }
 
             drawFloorplan();
+        </script>
+        {% else %}
+        <!-- If no areas are present, automatically check for updates -->
+        <script>
+            const jobId = "{{ job_id }}";
+            const statusMessage = document.getElementById('status-message');
+
+            function checkStatus() {
+                fetch(`/check_status/${jobId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'complete') {
+                            // Update the page with the results
+                            statusMessage.innerHTML = "Processing complete! Displaying results...";
+                            // Assuming the results are returned as part of the message
+                            const areas = JSON.parse(data.result);
+                            drawResults(areas);
+                        } else if (data.status === 'in progress') {
+                            // Still processing, check again after 30 seconds
+                            setTimeout(checkStatus, 10000); // 30 seconds
+                        } else {
+                            statusMessage.innerHTML = "Job not found or an error occurred.";
+                        }
+                    })
+                    .catch(error => {
+                        statusMessage.innerHTML = "An error occurred while checking status.";
+                        console.error("Error fetching status:", error);
+                    });
+            }
+
+            function drawResults(areas) {
+                const canvas = document.getElementById('floorplan-canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Clear and resize the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.width = 800;  // Set to desired width
+                canvas.height = 600; // Set to desired height
+
+                // Re-draw the floorplan
+                areas.forEach((area, index) => {
+                    drawPolygon(area.poly, area.color);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    if (area.poly.length > 0) {
+                        const centroid = getCentroid(area.poly);
+                        ctx.fillText(`${area.name} (${index})`, centroid.x, centroid.y);
+                    }
+                });
+            }
+
+            checkStatus();  // Start checking status every 30 seconds
         </script>
         {% endif %}
     </div>
