@@ -106,7 +106,13 @@
                     canvas.height = canvas.width / aspectRatio;
                 }
 
-                // Translate context
+                // Ensure the whole floorplan is visible
+                const scaleX = canvas.width / (maxX - minX);
+                const scaleY = canvas.height / (maxY - minY);
+                const scale = Math.min(scaleX, scaleY);
+                ctx.scale(scale, scale);
+                
+                // Translate context to fit content in canvas
                 ctx.translate(-minX, -minY);
 
                 function drawPolygon(points, color) {

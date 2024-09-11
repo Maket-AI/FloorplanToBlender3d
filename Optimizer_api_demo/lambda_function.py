@@ -56,7 +56,7 @@ def lambda_handler(event, context):
         
         # Extract only the first 'areas' list to reduce length
         areas = body.get('response', {}).get('floors', [{}])[0].get('designs', [{}])[0].get('areas', [])
-        print(f"before SQS, the areas: {areas}")
+        print(f"before SQS for job_id {job_id}, the areas: {areas}")
         
         # Send the result to SQS
         sqs_message = {
