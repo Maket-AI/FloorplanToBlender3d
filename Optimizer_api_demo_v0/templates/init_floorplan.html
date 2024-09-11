@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Floorplan Renovation Service</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Floorplan Renovation Service</h1>
+
+        {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+
+        {% if unnamed_rooms %}
+        <h3>Add Names to Unnamed Rooms</h3>
+        <canvas id="floorplan-canvas"></canvas>
+        <form id="add-names-form" method="POST" action="/add_room_names">
+            {% for index in unnamed_rooms %}
+            <div>
+                <label for="room_name_{{ index }}">Room {{ index }} Name:</label>
+                <input type="text" id="room_name_{{ index }}" name="room_name" required>
+                <input type="hidden" name="room_index" value="{{ index }}">
+            </div>
+            <br>
+            {% endfor %}
+            <button type="submit">Save Names</button>
+        </form>
+
+        <script>
+            const floorplanData = {{ floorplan_data | tojson }};
+            const canvas = document.getElementById('floorplan-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            floorplanData.areas.forEach(area => {
+                area.poly.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+            });
+
+            // Add some padding to the bounding box
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Calculate width and height
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            // Set canvas size dynamically
+            canvas.width = width;
+            canvas.height = height;
+
+            // Adjust the context to scale the content to fit within the canvas
+            ctx.translate(-minX, -minY);  // Translate context to fit all content
+
+            function drawPolygon(points, color) {
+                ctx.fillStyle = color || 'rgba(200, 200, 200, 0.5)'; // Use default color if none provided
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            function drawFloorplan() {
+                ctx.clearRect(minX, minY, width, height);  // Clear the canvas
+                floorplanData.areas.forEach((area, index) => {
+                    drawPolygon(area.poly, area.color);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(`Room ${index}`, area.poly[0].x + 5, area.poly[0].y - 5);
+                });
+            }
+
+            drawFloorplan();
+        </script>
+        {% else %}
+        <canvas id="floorplan-canvas"></canvas>
+        <h3>Select Room Indices to Renovate:</h3>
+        <div id="selected-rooms"></div>
+        <form id="renovation-form" method="POST" action="{{ url_for('process_' + selected_option) }}">
+            <input type="hidden" name="selected_indices" id="selected_indices" value="">
+
+            {% if selected_option == 'option3' or selected_option == 'option4' %}
+            <!-- Add rooms input block for Options 3 and 4 -->
+            <div id="add_rooms_options">
+                <label for="add_rooms">Add Rooms:</label>
+                <input type="text" id="add_rooms" name="add_rooms" placeholder="e.g., bedroom, bathroom">
+            </div>
+            <br>
+            {% endif %}
+            
+            <button type="submit">Submit</button>
+        </form>
+
+        <script>
+            const floorplanData = {{ floorplan_data | tojson }};
+            const canvas = document.getElementById('floorplan-canvas');
+            const ctx = canvas.getContext('2d');
+            const selectedIndices = [];
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            floorplanData.areas.forEach(area => {
+                area.poly.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+            });
+
+            // Add some padding to the bounding box
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Calculate width and height
+            const width = maxX - minX;
+            const height = maxY - minY;
+
+            // Set canvas size dynamically
+            canvas.width = width;
+            canvas.height = height;
+
+            // Adjust the context to scale the content to fit within the canvas
+            ctx.translate(-minX, -minY);  // Translate context to fit all content
+
+            function drawPolygon(points, color) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            function drawFloorplan() {
+                ctx.clearRect(minX, minY, width, height);  // Clear the canvas
+                floorplanData.areas.forEach((area, index) => {
+                    drawPolygon(area.poly, area.color);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText(`${area.name || 'Room'} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                });
+            }
+
+            function handleCanvasClick(event) {
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                floorplanData.areas.forEach((area, index) => {
+                    const path = new Path2D();
+                    path.moveTo(area.poly[0].x, area.poly[0].y);
+                    area.poly.slice(1).forEach(point => path.lineTo(point.x, point.y));
+                    path.closePath();
+
+                    if (ctx.isPointInPath(path, x, y)) {
+                        const selectedIndex = selectedIndices.indexOf(index);
+                        if (selectedIndex === -1) {
+                            selectedIndices.push(index);
+                            drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)'); // Highlight selected area
+                        } else {
+                            selectedIndices.splice(selectedIndex, 1);
+                            drawPolygon(area.poly, area.color); // Re-draw the original area color
+                        }
+                    }
+                });
+
+                selectedIndices.forEach(idx => {
+                    const area = floorplanData.areas[idx];
+                    drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
+                });
+
+                document.getElementById('selected_indices').value = JSON.stringify(selectedIndices);
+                updateSelectedRoomsDisplay();
+            }
+
+            function updateSelectedRoomsDisplay() {
+                const selectedRoomsDiv = document.getElementById('selected-rooms');
+                selectedRoomsDiv.innerHTML = `<p>Selected Room Indices: ${selectedIndices.join(', ')}</p>`;
+            }
+
+            canvas.addEventListener('click', handleCanvasClick);
+
+            drawFloorplan();
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>

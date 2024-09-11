@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Final Floorplan</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+        .renovate-button {
+            font-size: 20px;
+            background-color: green;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .renovate-button:hover {
+            background-color: darkgreen;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Floorplan Renovation Service</h1>
+        <button onclick="window.location.href='/'" class="renovate-button">Upload Another Floorplan</button>
+
+        {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+        {% endif %}
+
+        {% if areas %}
+        <canvas id="floorplan-canvas"></canvas>
+
+        <script>
+            const areas = {{ areas | tojson }};
+            const canvas = document.getElementById('floorplan-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Calculate bounding box
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            areas.forEach(area => {
+                area.poly.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+            });
+
+            // Add padding
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+
+            // Calculate canvas size
+            const width = maxX - minX;
+            const height = maxY - minY;
+            canvas.width = width;
+            canvas.height = height;
+
+            // Translate context
+            ctx.translate(-minX, -minY);
+
+            function drawPolygon(points, color) {
+                if (points.length === 0) return; // Do not draw if points are empty
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            function drawFloorplan() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
+                areas.forEach((area, index) => {
+                    drawPolygon(area.poly, area.color);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    if (area.poly.length > 0) {
+                        ctx.fillText(`${area.name} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                    }
+                });
+            }
+
+            drawFloorplan();
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>
