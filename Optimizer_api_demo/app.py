@@ -189,7 +189,7 @@ def call_lambda_async(result_json):
     # Invoke the processing Lambda function asynchronously
     try:
         response = lambda_client.invoke(
-            FunctionName='optimizer-poc-async-job-completion-notifier',  # Replace with your Lambda function name
+            FunctionName='optimizer-poc-async-job-completion-notifier',  
             InvocationType='Event',  # Asynchronous invocation
             Payload=json.dumps({'bucket': S3_BUCKET_NAME, 'key': s3_key, 'job_id': job_id})
         )

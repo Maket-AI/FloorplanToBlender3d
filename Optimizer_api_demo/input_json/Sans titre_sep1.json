@@ -1,0 +1,393 @@
+{
+  "name": "First design",
+  "lines": [],
+  "dimensions": [],
+  "labels": [],
+  "areas": [
+    {
+      "color": "#F2D8B0",
+      "showAreaLabel": true,
+      "poly": [
+        {
+          "x": 33.5,
+          "y": 1131.5
+        },
+        {
+          "x": 418.5,
+          "y": 1131.5
+        },
+        {
+          "x": 418.5,
+          "y": 940
+        },
+        {
+          "x": 418.5000000000015,
+          "y": 890.5000000000001
+        },
+        {
+          "x": 971.5,
+          "y": 890.5
+        },
+        {
+          "x": 971.5,
+          "y": 41.5
+        },
+        {
+          "x": 33.5,
+          "y": 41.5
+        },
+        {
+          "x": 33.5,
+          "y": 589
+        },
+        {
+          "x": 33.5,
+          "y": 746
+        }
+      ]
+    }
+  ],
+  "surfaces": [],
+  "items": [],
+  "walls": [
+    {
+      "a": {
+        "x": 21,
+        "y": 1144
+      },
+      "b": {
+        "x": 431,
+        "y": 1144
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": [
+        {
+          "refid": "219",
+          "t": 0.532130356102837,
+          "type": "window",
+          "width": 132,
+          "z_height": 150,
+          "z": 70,
+          "mirrored": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "a": {
+        "x": 984,
+        "y": 903
+      },
+      "b": {
+        "x": 984,
+        "y": 29
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": [
+        {
+          "refid": "222",
+          "t": 0.5041946308724832,
+          "type": "door",
+          "width": 148,
+          "z_height": 215,
+          "z": 0,
+          "mirrored": [
+            0,
+            0
+          ]
+        },
+        {
+          "refid": "219",
+          "t": 0.2139261744966443,
+          "type": "window",
+          "width": 218,
+          "z_height": 150,
+          "z": 70,
+          "mirrored": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "a": {
+        "x": 984,
+        "y": 29
+      },
+      "b": {
+        "x": 21,
+        "y": 29
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": [
+        {
+          "refid": "219",
+          "t": 0.8097412480974124,
+          "type": "window",
+          "width": 132,
+          "z_height": 150,
+          "z": 70,
+          "mirrored": [
+            0,
+            0
+          ]
+        },
+        {
+          "refid": "219",
+          "t": 0.28006595401953954,
+          "type": "window",
+          "width": 220,
+          "z_height": 150,
+          "z": 70,
+          "mirrored": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "a": {
+        "x": 21,
+        "y": 29
+      },
+      "b": {
+        "x": 21,
+        "y": 589
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": [
+        {
+          "refid": "219",
+          "t": 0.3023560209424084,
+          "type": "window",
+          "width": 174,
+          "z_height": 150,
+          "z": 70,
+          "mirrored": [
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "a": {
+        "x": 21,
+        "y": 589
+      },
+      "b": {
+        "x": 21,
+        "y": 746
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    },
+    {
+      "a": {
+        "x": 21,
+        "y": 746
+      },
+      "b": {
+        "x": 21,
+        "y": 1144
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    },
+    {
+      "a": {
+        "x": 431,
+        "y": 903
+      },
+      "b": {
+        "x": 984,
+        "y": 903
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    },
+    {
+      "a": {
+        "x": 431,
+        "y": 940
+      },
+      "b": {
+        "x": 431,
+        "y": 903
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    },
+    {
+      "a": {
+        "x": 431,
+        "y": 1144
+      },
+      "b": {
+        "x": 431,
+        "y": 940
+      },
+      "c": null,
+      "az": {
+        "z": 0,
+        "h": 280
+      },
+      "bz": {
+        "z": 0,
+        "h": 280
+      },
+      "thickness": 25,
+      "balance": 0.5,
+      "decor": {
+        "left": null,
+        "right": null,
+        "top": null,
+        "outline": 0
+      },
+      "openings": []
+    }
+  ],
+  "id": 259854117,
+  "settings": {
+    "engineAutoThickness": false,
+    "engineAutoDims": true,
+    "areaLabelMultiplier": 1,
+    "scaleMultiplierDimensions": 1.5,
+    "scaleMultiplierComments": 1,
+    "dimLineLabelHorizontal": false,
+    "showCeilings3D": true,
+    "minWallLength": 1
+  }
+}

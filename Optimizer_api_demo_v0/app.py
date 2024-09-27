@@ -190,6 +190,8 @@ def call_lambda(result_json):
             if "response" in response_body and "floors" in response_body["response"]:
                 areas = response_body["response"]["floors"][0]['designs'][0]['areas']
                 print(f"Areas are: {areas}")
+                rooms = response_body["response"]["rooms"]
+                print(f"rooms: {rooms}")
                 return redirect(url_for('result', areas=json.dumps(areas)))
             else:
                 return render_template('submit.html', floorplan_data=stored_floorplan_data, error_message="Renovation failed: unexpected response from the Lambda function.")
@@ -212,4 +214,4 @@ def result():
         return "No areas data available", 400
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8001, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)

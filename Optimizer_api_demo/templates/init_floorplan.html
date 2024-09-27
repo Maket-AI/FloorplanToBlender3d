@@ -1,16 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- [Unchanged head content] -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Floorplan Renovation Service</title>
     <style>
         canvas {
             border: 1px solid black;
+            max-width: 100%;
+            height: auto;
         }
         .error-message {
             color: red;
             font-weight: bold;
+        }
+        /* Additional styles for better presentation */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+        }
+        #selected-rooms {
+            margin-top: 10px;
+        }
+        form {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -24,7 +45,7 @@
 
         {% if unnamed_rooms %}
         <h3>Add Names to Unnamed Rooms</h3>
-        <canvas id="floorplan-canvas"></canvas>
+        <canvas id="floorplan-canvas" style="display:none;"></canvas>
         <form id="add-names-form" method="POST" action="/add_room_names">
             {% for index in unnamed_rooms %}
             <div>
@@ -60,19 +81,39 @@
             maxX += padding;
             maxY += padding;
 
-            // Calculate width and height
-            const width = maxX - minX;
-            const height = maxY - minY;
+            // Set higher canvas dimensions for better resolution
+            const canvasWidth = 1600; // Adjust as needed
+            const canvasHeight = 1200; // Adjust as needed
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
 
-            // Set canvas size dynamically
-            canvas.width = width;
-            canvas.height = height;
+            // Calculate scale to fit the content within the canvas
+            const scaleX = canvas.width / (maxX - minX);
+            const scaleY = canvas.height / (maxY - minY);
+            const scale = Math.min(scaleX, scaleY);
 
-            // Adjust the context to scale the content to fit within the canvas
-            ctx.translate(-minX, -minY);  // Translate context to fit all content
+            // Apply scaling and translation
+            ctx.scale(scale, scale);
+            ctx.translate(-minX, -minY);
+
+            // Function to get room color based on room type
+            function getRoomColor(name, index) {
+                const nightRooms = ['bedroom', 'bathroom', 'walk-in'];
+                const nightRoomColors = ['#ADD8E6', '#87CEFA', '#4682B4']; // Shades of blue
+                const dayRoomColors = ['#FFD700', '#FFA500', '#FF8C00']; // Shades of yellow/orange
+
+                if (nightRooms.includes(name.toLowerCase())) {
+                    return nightRoomColors[index % nightRoomColors.length];
+                } else {
+                    return dayRoomColors[index % dayRoomColors.length];
+                }
+            }
 
             function drawPolygon(points, color) {
+                if (points.length === 0) return; // Do not draw if points are empty
                 ctx.fillStyle = color || 'rgba(200, 200, 200, 0.5)'; // Use default color if none provided
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1 / scale;
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, points[0].y);
                 points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
@@ -81,20 +122,66 @@
                 ctx.stroke();
             }
 
+            function getCentroid(points) {
+                let x = 0, y = 0;
+                const numPoints = points.length;
+                points.forEach(point => {
+                    x += point.x;
+                    y += point.y;
+                });
+                return { x: x / numPoints, y: y / numPoints };
+            }
+
+            // Function to get bounding rectangle dimensions
+            function getBoundingRect(points) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                points.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+                return { width: maxX - minX, height: maxY - minY };
+            }
+
             function drawFloorplan() {
-                ctx.clearRect(minX, minY, width, height);  // Clear the canvas
+                ctx.clearRect(minX, minY, maxX - minX, maxY - minY);  // Clear the canvas
+
                 floorplanData.areas.forEach((area, index) => {
-                    drawPolygon(area.poly, area.color);
+                    const color = getRoomColor(area.name || 'room', index);
+                    drawPolygon(area.poly, color);
+
+                    // Calculate dimensions in meters
+                    const rect = getBoundingRect(area.poly);
+                    const widthMeters = (rect.width / 100).toFixed(2); // Convert cm to meters
+                    const heightMeters = (rect.height / 100).toFixed(2); // Convert cm to meters
+
                     ctx.fillStyle = "#000";
-                    ctx.font = "14px Arial";
-                    ctx.fillText(`Room ${index}`, area.poly[0].x + 5, area.poly[0].y - 5);
+                    ctx.font = `${40 / scale}px Arial`; // Increased font size for labels
+                    if (area.poly.length > 0) {
+                        const centroid = getCentroid(area.poly);
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(
+                            `Room ${index}\n${widthMeters}m x ${heightMeters}m`,
+                            centroid.x,
+                            centroid.y
+                        );
+                    }
                 });
             }
 
             drawFloorplan();
+
+            // Adjust canvas display size using CSS for better resolution
+            canvas.style.width = '800px'; // Adjust as needed
+            canvas.style.height = '600px'; // Adjust as needed
+            canvas.style.display = 'block'; // Show the canvas
         </script>
         {% else %}
-        <canvas id="floorplan-canvas"></canvas>
+        <!-- The rest of your code remains the same -->
+        <!-- Adjusted to include similar drawing functions -->
+        <canvas id="floorplan-canvas" style="display:none;"></canvas>
         <h3>Select Room Indices to Renovate:</h3>
         <div id="selected-rooms"></div>
         <form id="renovation-form" method="POST" action="{{ url_for('process_option' + selected_option[-1]) }}">
@@ -108,7 +195,7 @@
             </div>
             <br>
             {% endif %}
-            
+
             <button type="submit">Submit</button>
         </form>
 
@@ -136,19 +223,39 @@
             maxX += padding;
             maxY += padding;
 
-            // Calculate width and height
-            const width = maxX - minX;
-            const height = maxY - minY;
+            // Set higher canvas dimensions for better resolution
+            const canvasWidth = 1600; // Adjust as needed
+            const canvasHeight = 1200; // Adjust as needed
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
 
-            // Set canvas size dynamically
-            canvas.width = width;
-            canvas.height = height;
+            // Calculate scale to fit the content within the canvas
+            const scaleX = canvas.width / (maxX - minX);
+            const scaleY = canvas.height / (maxY - minY);
+            const scale = Math.min(scaleX, scaleY);
 
-            // Adjust the context to scale the content to fit within the canvas
-            ctx.translate(-minX, -minY);  // Translate context to fit all content
+            // Apply scaling and translation
+            ctx.scale(scale, scale);
+            ctx.translate(-minX, -minY);
+
+            // Function to get room color based on room type
+            function getRoomColor(name, index) {
+                const nightRooms = ['bedroom', 'bathroom', 'walk-in'];
+                const nightRoomColors = ['#ADD8E6', '#87CEFA', '#4682B4']; // Shades of blue
+                const dayRoomColors = ['#FFD700', '#FFA500', '#FF8C00']; // Shades of yellow/orange
+
+                if (nightRooms.includes(name.toLowerCase())) {
+                    return nightRoomColors[index % nightRoomColors.length];
+                } else {
+                    return dayRoomColors[index % dayRoomColors.length];
+                }
+            }
 
             function drawPolygon(points, color) {
+                if (points.length === 0) return; // Do not draw if points are empty
                 ctx.fillStyle = color;
+                ctx.strokeStyle = '#000'; // Outline color
+                ctx.lineWidth = 1 / scale; // Adjust line width based on scale
                 ctx.beginPath();
                 ctx.moveTo(points[0].x, points[0].y);
                 points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
@@ -157,20 +264,59 @@
                 ctx.stroke();
             }
 
+            function getCentroid(points) {
+                let x = 0, y = 0;
+                const numPoints = points.length;
+                points.forEach(point => {
+                    x += point.x;
+                    y += point.y;
+                });
+                return { x: x / numPoints, y: y / numPoints };
+            }
+
+            // Function to get bounding rectangle dimensions
+            function getBoundingRect(points) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                points.forEach(point => {
+                    if (point.x < minX) minX = point.x;
+                    if (point.y < minY) minY = point.y;
+                    if (point.x > maxX) maxX = point.x;
+                    if (point.y > maxY) maxY = point.y;
+                });
+                return { width: maxX - minX, height: maxY - minY };
+            }
+
             function drawFloorplan() {
-                ctx.clearRect(minX, minY, width, height);  // Clear the canvas
+                ctx.clearRect(minX, minY, maxX - minX, maxY - minY);  // Clear the canvas
+
                 floorplanData.areas.forEach((area, index) => {
-                    drawPolygon(area.poly, area.color);
+                    const color = getRoomColor(area.name || 'room', index);
+                    drawPolygon(area.poly, color);
+
+                    // Calculate dimensions in meters
+                    const rect = getBoundingRect(area.poly);
+                    const widthMeters = (rect.width / 100).toFixed(2); // Convert cm to meters
+                    const heightMeters = (rect.height / 100).toFixed(2); // Convert cm to meters
+
                     ctx.fillStyle = "#000";
-                    ctx.font = "14px Arial";
-                    ctx.fillText(`${area.name || 'Room'} (${index})`, area.poly[0].x + 5, area.poly[0].y - 5);
+                    ctx.font = `${40 / scale}px Arial`; // Increased font size for labels
+                    if (area.poly.length > 0) {
+                        const centroid = getCentroid(area.poly);
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(
+                            `${area.name || 'Room'} (${index})\n${widthMeters}m x ${heightMeters}m`,
+                            centroid.x,
+                            centroid.y
+                        );
+                    }
                 });
             }
 
             function handleCanvasClick(event) {
                 const rect = canvas.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
+                const x = (event.clientX - rect.left) * (canvas.width / canvas.offsetWidth) / scale + minX;
+                const y = (event.clientY - rect.top) * (canvas.height / canvas.offsetHeight) / scale + minY;
 
                 floorplanData.areas.forEach((area, index) => {
                     const path = new Path2D();
@@ -185,14 +331,29 @@
                             drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)'); // Highlight selected area
                         } else {
                             selectedIndices.splice(selectedIndex, 1);
-                            drawPolygon(area.poly, area.color); // Re-draw the original area color
+                            const color = getRoomColor(area.name || 'room', index);
+                            drawPolygon(area.poly, color); // Re-draw the original area color
                         }
                     }
                 });
 
-                selectedIndices.forEach(idx => {
-                    const area = floorplanData.areas[idx];
-                    drawPolygon(area.poly, 'rgba(0, 255, 0, 0.5)');
+                // Re-draw labels
+                floorplanData.areas.forEach((area, index) => {
+                    ctx.fillStyle = "#000";
+                    ctx.font = `${40 / scale}px Arial`;
+                    if (area.poly.length > 0) {
+                        const centroid = getCentroid(area.poly);
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        const rect = getBoundingRect(area.poly);
+                        const widthMeters = (rect.width / 100).toFixed(2);
+                        const heightMeters = (rect.height / 100).toFixed(2);
+                        ctx.fillText(
+                            `${area.name || 'Room'} (${index})\n${widthMeters}m x ${heightMeters}m`,
+                            centroid.x,
+                            centroid.y
+                        );
+                    }
                 });
 
                 document.getElementById('selected_indices').value = JSON.stringify(selectedIndices);
@@ -207,6 +368,11 @@
             canvas.addEventListener('click', handleCanvasClick);
 
             drawFloorplan();
+
+            // Adjust canvas display size using CSS for better resolution
+            canvas.style.width = '800px'; // Adjust as needed
+            canvas.style.height = '600px'; // Adjust as needed
+            canvas.style.display = 'block'; // Show the canvas
         </script>
         {% endif %}
     </div>

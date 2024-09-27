@@ -1,8 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
+    <!-- [Unchanged head content] -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Final Floorplan</title>
     <style>
         canvas {
@@ -55,18 +56,18 @@
                             displayResult(data.result);  // Function to display the result
                         } else if (data.status === 'in progress') {
                             // Job still in progress, keep polling
-                            setTimeout(checkJobStatus, 5000);  // Retry after 30 seconds
+                            setTimeout(checkJobStatus, 5000);  // Retry after 5 seconds
                         } else {
                             document.getElementById('status').innerText = 'Still in progress, reloading the page...';
                             setTimeout(function() {
-                                location.reload(); // Reload the page after 10 seconds
-                            }, 5000); // Wait for 10 seconds before reloading
+                                location.reload(); // Reload the page after 5 seconds
+                            }, 5000); // Wait for 5 seconds before reloading
                         }
                     })
                     .catch(error => {
                         console.error('Error fetching job status:', error);
                         document.getElementById('status').innerText = 'Error checking job status. Retrying...';
-                        setTimeout(checkJobStatus, 5000);  // Retry after 30 seconds in case of error
+                        setTimeout(checkJobStatus, 5000);  // Retry after 5 seconds in case of error
                     });
             }
 
@@ -80,6 +81,7 @@
                 const areas = JSON.parse(result).areas; // Assuming result is a JSON string with an 'areas' attribute
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
+                // First, find the min and max values
                 areas.forEach(area => {
                     area.poly.forEach(point => {
                         if (point.x < minX) minX = point.x;
@@ -96,31 +98,48 @@
                 maxX += padding;
                 maxY += padding;
 
-                // Calculate canvas size based on window size
-                const windowWidth = window.innerWidth;
-                const windowHeight = window.innerHeight;
-                const aspectRatio = (maxX - minX) / (maxY - minY);
+                // Set higher canvas dimensions for better resolution
+                const canvasWidth = 1600; // Increased canvas width
+                const canvasHeight = 1200; // Increased canvas height
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
 
-                if (windowWidth / aspectRatio > windowHeight) {
-                    canvas.height = windowHeight - 100; // Leave some space for other elements
-                    canvas.width = canvas.height * aspectRatio;
-                } else {
-                    canvas.width = windowWidth - 50; // Leave some space for other elements
-                    canvas.height = canvas.width / aspectRatio;
-                }
-
-                // Ensure the whole floorplan is visible
+                // Calculate scale to fit the content within the canvas
                 const scaleX = canvas.width / (maxX - minX);
                 const scaleY = canvas.height / (maxY - minY);
                 const scale = Math.min(scaleX, scaleY);
+
+                // Apply scaling and translation
                 ctx.scale(scale, scale);
-                
-                // Translate context to fit content in canvas
                 ctx.translate(-minX, -minY);
+
+                // Function to get room color based on room type
+                function getRoomColor(name, index) {
+                    const nightRooms = ['bedroom', 'bathroom', 'walk-in'];
+                    const nightRoomColors = ['#ADD8E6', '#87CEFA', '#4682B4']; // shades of blue
+                    const dayRoomColors = ['#FFD700', '#FFA500', '#FF8C00']; // shades of yellow/orange
+
+                    if (nightRooms.includes(name.toLowerCase())) {
+                        return nightRoomColors[index % nightRoomColors.length];
+                    } else {
+                        return dayRoomColors[index % dayRoomColors.length];
+                    }
+                }
+
+                // Function to convert hex color to rgba with alpha
+                function hexToRGBA(hex, alpha) {
+                    var r = parseInt(hex.slice(1,3), 16);
+                    var g = parseInt(hex.slice(3,5), 16);
+                    var b = parseInt(hex.slice(5,7), 16);
+
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                }
 
                 function drawPolygon(points, color) {
                     if (points.length === 0) return; // Do not draw if points are empty
-                    ctx.fillStyle = color;
+                    ctx.fillStyle = hexToRGBA(color, 0.6); // Set transparency here
+                    ctx.strokeStyle = '#000'; // Outline color
+                    ctx.lineWidth = 1 / scale; // Adjust line width based on scale
                     ctx.beginPath();
                     ctx.moveTo(points[0].x, points[0].y);
                     points.slice(1).forEach(point => ctx.lineTo(point.x, point.y));
@@ -139,20 +158,49 @@
                     return { x: x / numPoints, y: y / numPoints };
                 }
 
+                function getBoundingRectangle(points) {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    points.forEach(point => {
+                        if (point.x < minX) minX = point.x;
+                        if (point.y < minY) minY = point.y;
+                        if (point.x > maxX) maxX = point.x;
+                        if (point.y > maxY) maxY = point.y;
+                    });
+                    return { minX, minY, maxX, maxY };
+                }
+
                 function drawFloorplan() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas before drawing
+                    ctx.clearRect(minX, minY, maxX - minX, maxY - minY); // Clear canvas before drawing
+
                     areas.forEach((area, index) => {
-                        drawPolygon(area.poly, area.color);
+                        const color = getRoomColor(area.name, index);
+                        drawPolygon(area.poly, color);
                         ctx.fillStyle = "#000";
-                        ctx.font = "14px Arial";
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
                         if (area.poly.length > 0) {
                             const centroid = getCentroid(area.poly);
-                            ctx.fillText(`${area.name} (${index})`, centroid.x, centroid.y);
+                            const boundingRect = getBoundingRectangle(area.poly);
+                            const widthMeters = ((boundingRect.maxX - boundingRect.minX) / 100).toFixed(2); // Convert cm to meters
+                            const heightMeters = ((boundingRect.maxY - boundingRect.minY) / 100).toFixed(2);
+
+                            // Draw room name
+                            ctx.font = `${40 / scale}px Arial`; // Font size for room name
+                            ctx.fillText(`${area.name}`, centroid.x, centroid.y - (10 / scale));
+
+                            // Draw width x height in smaller font
+                            ctx.font = `${30 / scale}px Arial`; // Smaller font size
+                            ctx.fillText(`${widthMeters} x ${heightMeters} m`, centroid.x, centroid.y + (20 / scale));
                         }
                     });
                 }
 
                 drawFloorplan();
+
+                // Adjust canvas display size using CSS for better resolution
+                canvas.style.width = '800px'; // Adjust as needed
+                canvas.style.height = '600px'; // Adjust as needed
             }
 
             // Initial status check
