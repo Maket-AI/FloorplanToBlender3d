@@ -13,7 +13,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # AWS Configuration
-stored_floorplan_data = None
+stored_floorplan_data = None  # Global variable to store the original floorplan data
 config = Config(connect_timeout=5, read_timeout=900)
 lambda_client = boto3.client('lambda', region_name=os.getenv('AWS_REGION'), config=config)
 s3_client = boto3.client('s3', region_name=os.getenv('AWS_REGION'))
@@ -206,7 +206,7 @@ def check_status(job_id):
         print(f"Checking status for job_id: {job_id}")  # Debug: Log job ID being checked
         response = sqs_client.receive_message(
             QueueUrl=SQS_QUEUE_URL,
-            MaxNumberOfMessages=1,
+            MaxNumberOfMessages=10,  # Increased to check multiple messages
             WaitTimeSeconds=0
         )
         if 'Messages' in response:
@@ -214,23 +214,23 @@ def check_status(job_id):
                 body = json.loads(message['Body'])
                 if job_id == body.get('job_id'):
                     # Job found, return the result
-                    print(f"Job {job_id} found in SQS. Deleting message and return result.")  # Debug: Log job match found
+                    print(f"Job {job_id} found in SQS. Deleting message and returning result.")  # Debug: Log job match found
                     sqs_client.delete_message(
                         QueueUrl=SQS_QUEUE_URL,
                         ReceiptHandle=message['ReceiptHandle']
                     )
                     return jsonify({"status": "complete", "result": body.get('result', 'No result found')})
                 else:
-                    print(f"Job {job_id} not found in this message, still in progress.")  # Debug: Log job not found in the current message
-                    return jsonify({"status": "in progress"})
+                    print(f"Job {job_id} not found in this message, checking next.")  # Debug: Log job not found in the current message
+            print(f"Job {job_id} not found in SQS messages.")  # Debug: Log after checking all messages
+            return jsonify({"status": "in progress"})
         else:
             print("No messages in SQS queue.")  # Debug: Log if no messages are found in SQS
-            return jsonify({"status": "not found"})
+            return jsonify({"status": "in progress"})
 
     except Exception as e:
         print(f"Error while checking status: {e}")  # Debug: Log any exceptions
         return jsonify({"status": "error", "message": str(e)})
-
 
 @app.route('/result', methods=['GET'])
 def result():
@@ -239,7 +239,12 @@ def result():
     if not job_id:
         return "Job ID not provided", 400
 
-    return render_template('result.html', job_id=job_id)
+    global stored_floorplan_data
+    if not stored_floorplan_data:
+        return "No original floorplan data found", 400
+
+    # Pass the original floorplan data to the template
+    return render_template('result.html', job_id=job_id, original_floorplan_data=stored_floorplan_data)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
