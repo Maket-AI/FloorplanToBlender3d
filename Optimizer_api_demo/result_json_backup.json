@@ -1,84 +1,52 @@
 {
     "data": {
-        "name": "Generated",
+        "name": "First design",
         "lines": [],
         "dimensions": [],
         "labels": [],
         "areas": [
             {
-                "color": "#DDDDDD",
-                "rotation": 0,
-                "name": "kitchen",
-                "role": 2,
-                "name_x": 0,
-                "name_y": 0,
+                "color": "#F2D8B0",
                 "showAreaLabel": true,
                 "poly": [
                     {
-                        "x": 7.5,
-                        "y": 192.5
+                        "x": 33.5,
+                        "y": 1131.5
                     },
                     {
-                        "x": 503,
-                        "y": 192.5
+                        "x": 418.5,
+                        "y": 1131.5
                     },
                     {
-                        "x": 1006,
-                        "y": 192.5
+                        "x": 418.5,
+                        "y": 940
                     },
                     {
-                        "x": 1707,
-                        "y": 192.5
+                        "x": 418.5000000000015,
+                        "y": 890.5000000000001
                     },
                     {
-                        "x": 1912.5,
-                        "y": 192.5
+                        "x": 971.5,
+                        "y": 890.5
                     },
                     {
-                        "x": 1912.5,
-                        "y": -5.5
+                        "x": 971.5,
+                        "y": 41.5
                     },
                     {
-                        "x": 1699.5,
-                        "y": -5.5
+                        "x": 33.5,
+                        "y": 41.5
                     },
                     {
-                        "x": 1699.5,
-                        "y": -303
+                        "x": 33.5,
+                        "y": 589
                     },
                     {
-                        "x": 1699.5,
-                        "y": -798.5
-                    },
-                    {
-                        "x": 1211.5,
-                        "y": -798.5
-                    },
-                    {
-                        "x": 1211.5,
-                        "y": -584.5
-                    },
-                    {
-                        "x": 921.5,
-                        "y": -584.5
-                    },
-                    {
-                        "x": 921.5,
-                        "y": -295.5
-                    },
-                    {
-                        "x": 510.5,
-                        "y": -295.5
-                    },
-                    {
-                        "x": 510.5,
-                        "y": -188.5
-                    },
-                    {
-                        "x": 7.5,
-                        "y": -188.5
+                        "x": 33.5,
+                        "y": 746
                     }
-                ]
+                ],
+                "name": "corridor"
             }
         ],
         "surfaces": [],
@@ -86,13 +54,14 @@
         "walls": [
             {
                 "a": {
-                    "x": 1204,
-                    "y": -806
+                    "x": 21,
+                    "y": 1144
                 },
                 "b": {
-                    "x": 1707,
-                    "y": -806
+                    "x": 431,
+                    "y": 1144
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -101,24 +70,20 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
                 "openings": [
                     {
                         "refid": "219",
-                        "t": 0.4990059642147117,
+                        "t": 0.532130356102837,
                         "type": "window",
-                        "width": 165.99,
+                        "width": 132,
                         "z_height": 150,
                         "z": 70,
                         "mirrored": [
@@ -130,13 +95,14 @@
             },
             {
                 "a": {
-                    "x": 503,
-                    "y": 200
+                    "x": 984,
+                    "y": 903
                 },
                 "b": {
-                    "x": 0,
-                    "y": 200
+                    "x": 984,
+                    "y": 29
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -145,306 +111,32 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
                 "openings": [
                     {
-                        "refid": "219",
-                        "t": 0.5009940357852883,
-                        "type": "window",
-                        "width": 165.99,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
-            },
-            {
-                "a": {
-                    "x": 0,
-                    "y": 200
-                },
-                "b": {
-                    "x": 0,
-                    "y": -196
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": []
-            },
-            {
-                "a": {
-                    "x": 0,
-                    "y": -196
-                },
-                "b": {
-                    "x": 503,
-                    "y": -196
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.49900596421471166,
-                        "type": "window",
-                        "width": 165.99,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
-            },
-            {
-                "a": {
-                    "x": 1707,
-                    "y": 200
-                },
-                "b": {
-                    "x": 1006,
-                    "y": 200
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.5007132667617689,
-                        "type": "window",
-                        "width": 231.33,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
-            },
-            {
-                "a": {
-                    "x": 1006,
-                    "y": 200
-                },
-                "b": {
-                    "x": 503,
-                    "y": 200
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.5009940357852882,
-                        "type": "window",
-                        "width": 165.99,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
-            },
-            {
-                "a": {
-                    "x": 503,
-                    "y": -196
-                },
-                "b": {
-                    "x": 503,
-                    "y": -303
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": []
-            },
-            {
-                "a": {
-                    "x": 1920,
-                    "y": 200
-                },
-                "b": {
-                    "x": 1707,
-                    "y": 200
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": [
-                    {
-                        "refid": "210",
-                        "t": 0.49765258215962443,
+                        "refid": "222",
+                        "t": 0.5041946308724832,
                         "type": "door",
-                        "width": 100,
+                        "width": 148,
                         "z_height": 215,
                         "z": 0,
                         "mirrored": [
-                            1,
+                            0,
                             0
                         ]
-                    }
-                ]
-            },
-            {
-                "a": {
-                    "x": 1920,
-                    "y": -13
-                },
-                "b": {
-                    "x": 1920,
-                    "y": 200
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
                     },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": [
                     {
                         "refid": "219",
-                        "t": 0.49765258215962443,
+                        "t": 0.2139261744966443,
                         "type": "window",
-                        "width": 70.29,
+                        "width": 218,
                         "z_height": 150,
                         "z": 70,
                         "mirrored": [
@@ -456,13 +148,14 @@
             },
             {
                 "a": {
-                    "x": 1707,
-                    "y": -13
+                    "x": 984,
+                    "y": 29
                 },
                 "b": {
-                    "x": 1920,
-                    "y": -13
+                    "x": 21,
+                    "y": 29
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -471,24 +164,32 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
                 "openings": [
                     {
                         "refid": "219",
-                        "t": 0.5023474178403756,
+                        "t": 0.8097412480974124,
                         "type": "window",
-                        "width": 70.29,
+                        "width": 132,
+                        "z_height": 150,
+                        "z": 70,
+                        "mirrored": [
+                            0,
+                            0
+                        ]
+                    },
+                    {
+                        "refid": "219",
+                        "t": 0.28006595401953954,
+                        "type": "window",
+                        "width": 220,
                         "z_height": 150,
                         "z": 70,
                         "mirrored": [
@@ -500,13 +201,14 @@
             },
             {
                 "a": {
-                    "x": 1204,
-                    "y": -592
+                    "x": 21,
+                    "y": 29
                 },
                 "b": {
-                    "x": 1204,
-                    "y": -806
+                    "x": 21,
+                    "y": 589
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -515,15 +217,52 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
+                    "top": null,
+                    "outline": 0
+                },
+                "openings": [
+                    {
+                        "refid": "219",
+                        "t": 0.3023560209424084,
+                        "type": "window",
+                        "width": 174,
+                        "z_height": 150,
+                        "z": 70,
+                        "mirrored": [
+                            0,
+                            0
+                        ]
+                    }
+                ]
+            },
+            {
+                "a": {
+                    "x": 21,
+                    "y": 589
+                },
+                "b": {
+                    "x": 21,
+                    "y": 746
+                },
+                "c": null,
+                "az": {
+                    "z": 0,
+                    "h": 280
+                },
+                "bz": {
+                    "z": 0,
+                    "h": 280
+                },
+                "thickness": 25,
+                "balance": 0.5,
+                "decor": {
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
@@ -531,13 +270,14 @@
             },
             {
                 "a": {
-                    "x": 914,
-                    "y": -592
+                    "x": 21,
+                    "y": 746
                 },
                 "b": {
-                    "x": 1204,
-                    "y": -592
+                    "x": 21,
+                    "y": 1144
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -546,42 +286,26 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.5,
-                        "type": "window",
-                        "width": 95.7,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
+                "openings": []
             },
             {
                 "a": {
-                    "x": 1707,
-                    "y": -806
+                    "x": 431,
+                    "y": 903
                 },
                 "b": {
-                    "x": 1707,
-                    "y": -303
+                    "x": 984,
+                    "y": 903
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -590,42 +314,26 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.5009940357852882,
-                        "type": "window",
-                        "width": 165.99,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
+                "openings": []
             },
             {
                 "a": {
-                    "x": 1707,
-                    "y": -303
+                    "x": 431,
+                    "y": 940
                 },
                 "b": {
-                    "x": 1707,
-                    "y": -13
+                    "x": 431,
+                    "y": 903
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -634,42 +342,26 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.5,
-                        "type": "window",
-                        "width": 95.7,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
+                "openings": []
             },
             {
                 "a": {
-                    "x": 914,
-                    "y": -303
+                    "x": 431,
+                    "y": 1144
                 },
                 "b": {
-                    "x": 914,
-                    "y": -592
+                    "x": 431,
+                    "y": 940
                 },
+                "c": null,
                 "az": {
                     "z": 0,
                     "h": 280
@@ -678,88 +370,27 @@
                     "z": 0,
                     "h": 280
                 },
-                "thickness": 15,
+                "thickness": 25,
                 "balance": 0.5,
                 "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
+                    "left": null,
+                    "right": null,
                     "top": null,
                     "outline": 0
                 },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.5017301038062284,
-                        "type": "window",
-                        "width": 95.37,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
-            },
-            {
-                "a": {
-                    "x": 503,
-                    "y": -303
-                },
-                "b": {
-                    "x": 914,
-                    "y": -303
-                },
-                "az": {
-                    "z": 0,
-                    "h": 280
-                },
-                "bz": {
-                    "z": 0,
-                    "h": 280
-                },
-                "thickness": 15,
-                "balance": 0.5,
-                "decor": {
-                    "left": {
-                        "color": "#F2EAD7"
-                    },
-                    "right": {
-                        "color": "#F2EAD7"
-                    },
-                    "top": null,
-                    "outline": 0
-                },
-                "openings": [
-                    {
-                        "refid": "219",
-                        "t": 0.5012165450121655,
-                        "type": "window",
-                        "width": 135.63,
-                        "z_height": 150,
-                        "z": 70,
-                        "mirrored": [
-                            0,
-                            0
-                        ]
-                    }
-                ]
+                "openings": []
             }
         ],
-        "id": 258785523,
+        "id": 259854117,
         "settings": {
             "engineAutoThickness": false,
             "engineAutoDims": true,
-            "areaLabelMultiplier": 1.7,
+            "areaLabelMultiplier": 1,
             "scaleMultiplierDimensions": 1.5,
-            "scaleMultiplierComments": 1.3,
+            "scaleMultiplierComments": 1,
             "dimLineLabelHorizontal": false,
             "showCeilings3D": true,
-            "minWallLength": 4
+            "minWallLength": 1
         }
     },
     "renovate_id_set": [
@@ -768,12 +399,11 @@
     "renovate_change": {
         "delete": [],
         "add": [
-            "bedroom",
-            "bathroom",
-            "bedroom",
+            "Kitchen",
             "living_room",
-            "garage",
-            "entrance"
+            "dining_room",
+            "bedroom",
+            "bathroom"
         ]
     }
 }

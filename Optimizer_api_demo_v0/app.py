@@ -209,6 +209,8 @@ def result():
     areas = request.args.get('areas')
     if areas:
         areas = json.loads(areas)
+        old_areas = stored_floorplan_data["areas"]
+        print(f"original_areas: {old_areas}")
         return render_template('result.html', areas=areas)
     else:
         return "No areas data available", 400
