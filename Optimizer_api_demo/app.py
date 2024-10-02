@@ -76,7 +76,12 @@ def options():
         else:
             return "Invalid option selected", 400
 
-    return render_template('options.html')
+    # Pass the floorplan_data to the template if available
+    if stored_floorplan_data:
+        return render_template('options.html', floorplan_data=stored_floorplan_data)
+    else:
+        return render_template('options.html')
+
 
 @app.route('/process_option1', methods=['GET', 'POST'])
 def process_option1():
