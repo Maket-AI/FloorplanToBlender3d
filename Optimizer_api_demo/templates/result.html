@@ -188,7 +188,12 @@
 
                     // Draw the result floorplan in stronger colors
                     areas.forEach((area, index) => {
-                        const color = getRoomColor(area.name, index);
+                        let color;
+                        if (area.name.toLowerCase() === 'corridor') {
+                            color = '#cfcfcf'; // Grey color for corridors
+                        } else {
+                            color = getRoomColor(area.name, index);
+                        }
                         drawPolygon(area.poly, color, 0.6); // Semi-transparent fill
                         ctx.fillStyle = "#000";
                         ctx.textAlign = 'center';
@@ -200,13 +205,16 @@
                             const widthMeters = ((boundingRect.maxX - boundingRect.minX) / 100).toFixed(2); // Convert cm to meters
                             const heightMeters = ((boundingRect.maxY - boundingRect.minY) / 100).toFixed(2);
 
-                            // Draw room name
-                            ctx.font = `${40 / scale}px Arial`; // Font size for room name
-                            ctx.fillText(`${area.name}`, centroid.x, centroid.y - (10 / scale));
+                            // Only draw labels if the room is not a corridor
+                            if (area.name.toLowerCase() !== 'corridor') {
+                                // Draw room name
+                                ctx.font = `${40 / scale}px Arial`; // Font size for room name
+                                ctx.fillText(`${area.name}`, centroid.x, centroid.y - (10 / scale));
 
-                            // Draw width x height in smaller font
-                            ctx.font = `${30 / scale}px Arial`; // Smaller font size
-                            ctx.fillText(`${widthMeters} x ${heightMeters} m`, centroid.x, centroid.y + (20 / scale));
+                                // Draw width x height in smaller font
+                                ctx.font = `${30 / scale}px Arial`; // Smaller font size
+                                ctx.fillText(`${widthMeters} x ${heightMeters} m`, centroid.x, centroid.y + (20 / scale));
+                            }
                         }
                     });
                 }

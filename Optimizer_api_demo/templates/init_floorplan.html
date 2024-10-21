@@ -3,7 +3,6 @@
 <head>
     <!-- [Unchanged head content] -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Floorplan Renovation Service</title>
     <style>
         canvas {
@@ -33,6 +32,11 @@
             padding: 10px 20px;
             font-size: 16px;
         }
+        /* Styles for dynamic elements */
+        .opening-select {
+            display: none;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -50,8 +54,25 @@
             {% for index in unnamed_rooms %}
             <div>
                 <label for="room_name_{{ index }}">Room {{ index }} Name:</label>
-                <input type="text" id="room_name_{{ index }}" name="room_name" required>
-                <input type="hidden" name="room_index" value="{{ index }}">
+                <select id="room_name_{{ index }}" name="room_name_{{ index }}" required>
+                    <option value="" disabled selected>Select room type</option>
+                    {% for room_type in all_room_types %}
+                    <option value="{{ room_type }}">{{ room_type.replace('_', ' ').title() }}</option>
+                    {% endfor %}
+                    <option value="opening_room">Opening Room</option>
+                </select>
+                <input type="hidden" name="room_index_{{ index }}" value="{{ index }}">
+
+                <!-- Additional select for opening_room -->
+                <div id="opening_select_{{ index }}" class="opening-select">
+                    <label for="opening_includes_{{ index }}">Opening contains:</label>
+                    <select id="opening_includes_{{ index }}" name="opening_includes_{{ index }}">
+                        <option value="" disabled selected>Select options</option>
+                        <option value="entry,kitchen,dining_room,living_room">Entry, Kitchen, Dining Room, Living Room</option>
+                        <option value="bedroom,closet,bathroom">Bedroom, Closet, Bathroom</option>
+                        <option value="entry,kitchen,bedroom">Entry, Kitchen, Bedroom</option>
+                    </select>
+                </div>
             </div>
             <br>
             {% endfor %}
@@ -60,6 +81,9 @@
 
         <script>
             const floorplanData = {{ floorplan_data | tojson }};
+            const unnamedRooms = {{ unnamed_rooms | tojson }};
+            const allRoomTypes = {{ all_room_types | tojson }};
+
             const canvas = document.getElementById('floorplan-canvas');
             const ctx = canvas.getContext('2d');
 
@@ -177,6 +201,20 @@
             canvas.style.width = '800px'; // Adjust as needed
             canvas.style.height = '600px'; // Adjust as needed
             canvas.style.display = 'block'; // Show the canvas
+
+            // JavaScript to handle dynamic display of opening options
+            unnamedRooms.forEach(index => {
+                const roomSelect = document.getElementById(`room_name_${index}`);
+                const openingSelectDiv = document.getElementById(`opening_select_${index}`);
+
+                roomSelect.addEventListener('change', function() {
+                    if (this.value === 'opening_room') {
+                        openingSelectDiv.style.display = 'block';
+                    } else {
+                        openingSelectDiv.style.display = 'none';
+                    }
+                });
+            });
         </script>
         {% else %}
         <!-- The rest of your code remains the same -->
@@ -199,6 +237,7 @@
             <button type="submit">Submit</button>
         </form>
 
+        <!-- Include your JavaScript for drawing and interaction here -->
         <script>
             const floorplanData = {{ floorplan_data | tojson }};
             const canvas = document.getElementById('floorplan-canvas');
