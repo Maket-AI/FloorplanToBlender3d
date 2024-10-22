@@ -21,7 +21,7 @@ sqs_client = boto3.client('sqs', region_name=os.getenv('AWS_REGION'))
 
 # Configuration
 S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')  # Set your S3 bucket name
-SQS_QUEUE_URL = os.getenv('SQS_QUEUE_URL')  # Set your SQS queue URL
+SQS_QUEUE_URL = os.getenv('SQS_QUEUE_URL')    # Set your SQS queue URL
 
 # Define ALL_ROOM_TYPES
 ALL_ROOM_TYPES = [
@@ -88,7 +88,7 @@ def add_room_names():
         if room_name == 'opening_room':
             opening_includes = request.form.get(f'opening_includes_{idx}')
             if opening_includes:
-                opening_includes_list = opening_includes.split(',')
+                opening_includes_list = [room.strip() for room in opening_includes.split(',') if room.strip()]
                 stored_floorplan_data['areas'][int(idx)]['name'] = 'opening_space'
                 stored_floorplan_data['areas'][int(idx)]['opening_includes'] = opening_includes_list
             else:
@@ -120,8 +120,35 @@ def options():
 @app.route('/process_option1', methods=['GET', 'POST'])
 def process_option1():
     """Process Option 1: Review a floorplan in its entirety"""
+    global stored_floorplan_data
+    if not stored_floorplan_data:
+        return "No floorplan data found", 400
+
+    # Renovate_id_set is all room indices
     indices = [i for i in range(len(stored_floorplan_data['areas']))]
-    job_id = process_floorplan(indices)
+    
+    # Initialize the add_list
+    add_list = []
+
+    # Iterate through all rooms to find 'opening_space' and collect their 'opening_includes'
+    for idx, area in enumerate(stored_floorplan_data['areas']):
+        if area.get('name') == 'opening_space':
+            opening_includes_list = area.get('opening_includes', [])
+            print(f"Opening includes for opening_space at index {idx}: {opening_includes_list}")
+            add_list.extend(opening_includes_list)
+
+    # Print the add_list before adding it to result_json
+    print(f"Rooms to add: {add_list}")
+
+    result_json = {
+        "data": stored_floorplan_data,
+        "renovate_id_set": indices,
+        "renovate_change": {
+            "delete": [],
+            "add": add_list
+        }
+    }
+    job_id = call_lambda_async(result_json)
     if isinstance(job_id, dict):
         return jsonify(job_id)  # Return error if job_id is actually an error message
     return redirect(url_for('result', job_id=job_id))
@@ -130,18 +157,50 @@ def process_option1():
 def process_option2():
     """Process Option 2: Review just a part of the floorplan"""
     global stored_floorplan_data
+    if not stored_floorplan_data:
+        return "No floorplan data found", 400
+
     if request.method == 'POST':
         selected_indices = request.form.get('selected_indices')
         try:
             selected_indices = json.loads(selected_indices)
         except json.JSONDecodeError as e:
             print(f"JSON decode error: {str(e)}")
-            return jsonify({"message": f"JSON decode error: {str(e)}"})
+            return jsonify({"message": f"JSON decode error: {str(e)}"}), 400
 
-        job_id = process_floorplan(selected_indices)
+        # Initialize the add_list
+        add_list = []
+
+        # Iterate through selected indices to find 'opening_space' and collect their 'opening_includes'
+        for idx in selected_indices:
+            if not isinstance(idx, int):
+                print(f"Invalid room index type: {idx}")
+                continue  # Skip invalid types
+            if idx < 0 or idx >= len(stored_floorplan_data['areas']):
+                print(f"Invalid room index selected: {idx}")
+                continue  # Skip invalid indices
+            area = stored_floorplan_data['areas'][int(idx)]
+            if area.get('name') == 'opening_space':
+                opening_includes_list = area.get('opening_includes', [])
+                print(f"Opening includes for opening_space at index {idx}: {opening_includes_list}")
+                add_list.extend(opening_includes_list)
+
+        # Print the add_list before adding it to result_json
+        print(f"Rooms to add: {add_list}")
+
+        result_json = {
+            "data": stored_floorplan_data,
+            "renovate_id_set": selected_indices,
+            "renovate_change": {
+                "delete": [],
+                "add": add_list
+            }
+        }
+        job_id = call_lambda_async(result_json)
         if isinstance(job_id, dict):
             return jsonify(job_id)  # Return error if job_id is actually an error message
         return redirect(url_for('result', job_id=job_id))
+
     return render_template(
         'init_floorplan.html',
         floorplan_data=stored_floorplan_data,
@@ -153,6 +212,9 @@ def process_option2():
 def process_option3():
     """Process Option 3: Fill an empty space with just the exterior walls"""
     global stored_floorplan_data
+    if not stored_floorplan_data:
+        return "No floorplan data found", 400
+
     if request.method == 'POST':
         rooms_to_add_input = request.form.get('add_rooms', '')
         rooms_to_add = rooms_to_add_input.split(',')
@@ -197,6 +259,9 @@ def process_option3():
 def process_option4():
     """Process Option 4: Fill an empty space in a section of the floorplan"""
     global stored_floorplan_data
+    if not stored_floorplan_data:
+        return "No floorplan data found", 400
+
     if request.method == 'POST':
         selected_indices = request.form.get('selected_indices')
         rooms_to_add_input = request.form.get('add_rooms', '')
@@ -206,13 +271,19 @@ def process_option4():
             selected_indices = json.loads(selected_indices)
         except json.JSONDecodeError as e:
             print(f"JSON decode error: {str(e)}")
-            return jsonify({"message": f"JSON decode error: {str(e)}"})
+            return jsonify({"message": f"JSON decode error: {str(e)}"}), 400
 
         # Initialize the add_list
         add_list = []
         
         # Iterate over the selected indices
         for idx in selected_indices:
+            if not isinstance(idx, int):
+                print(f"Invalid room index type: {idx}")
+                continue  # Skip invalid types
+            if idx < 0 or idx >= len(stored_floorplan_data['areas']):
+                print(f"Invalid room index selected: {idx}")
+                continue  # Skip invalid indices
             area = stored_floorplan_data['areas'][int(idx)]
             if area.get('name') == 'opening_space':
                 opening_includes_list = area.get('opening_includes', [])
@@ -303,6 +374,7 @@ def check_status(job_id):
         if 'Messages' in response:
             for message in response['Messages']:
                 body = json.loads(message['Body'])
+                # Depending on your SQS message structure, you might need to adjust how you parse 'body'
                 if job_id == body.get('job_id'):
                     # Job found, return the result
                     print(f"Job {job_id} found in SQS. Deleting message and returning result.")  # Debug: Log job match found
@@ -318,10 +390,9 @@ def check_status(job_id):
         else:
             print("No messages in SQS queue.")  # Debug: Log if no messages are found in SQS
             return jsonify({"status": "in progress"})
-
     except Exception as e:
         print(f"Error while checking status: {e}")  # Debug: Log any exceptions
-        return jsonify({"status": "error", "message": str(e)})
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/result', methods=['GET'])
 def result():
