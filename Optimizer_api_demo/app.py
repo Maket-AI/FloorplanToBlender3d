@@ -336,6 +336,17 @@ def call_lambda_async(result_json):
     # Debugging: Print the bucket name to confirm it is set correctly
     print(f"Using S3 bucket name: {S3_BUCKET_NAME}")
 
+    # Save result_json to a local file when debugging
+    from flask import current_app
+    if current_app.debug:
+        debug_filename = f'floorplanner_{job_id}.json'
+        try:
+            with open(debug_filename, 'w') as f:
+                json.dump(result_json, f, indent=4)
+            print(f"Saved result_json to {debug_filename}")
+        except Exception as e:
+            print(f"Error saving result_json to local file: {e}")
+
     # Upload JSON to S3
     try:
         # Check if the bucket name is valid
@@ -361,6 +372,7 @@ def call_lambda_async(result_json):
         print(f"Error invoking Lambda: {e}")
         return {"message": "Failed to invoke Lambda", "error": str(e)}
 
+
 @app.route('/check_status/<job_id>', methods=['GET'])
 def check_status(job_id):
     """Check the status of the job by reading from the SQS queue."""
@@ -382,6 +394,7 @@ def check_status(job_id):
                         QueueUrl=SQS_QUEUE_URL,
                         ReceiptHandle=message['ReceiptHandle']
                     )
+                    print(f"result: {body.get('result', 'No result found')}")
                     return jsonify({"status": "complete", "result": body.get('result', 'No result found')})
                 else:
                     print(f"Job {job_id} not found in this message, checking next.")  # Debug: Log job not found in the current message
