@@ -1,7 +1,7 @@
-from shapely.geometry import Polygon, MultiPoint
+from shapely.geometry import Polygon, MultiPoint, LineString, MultiLineString
 import json
 from call_blender3d import norm_blender3d
-from floorplan_detector.utils.merge_walls import merge_wall_processing
+from utils.merge_walls import merge_wall_processing
 from utils.rectangularized import rectangularized
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +10,7 @@ import datetime
 import os
 from urllib.parse import urlparse
 import math
+from shapely.ops import unary_union
 
 def plot_rooms(data):
     """
@@ -91,23 +92,77 @@ def calculate_dimensions(geometry, scale):
     return width, height
 
 
+def expand_and_merge_rooms(rooms):
+    """
+    Expands room polygons and creates shared walls between adjacent rooms.
+    
+    :param rooms: List of dictionaries containing room info with 'polygon' key
+    :return: List of processed room dictionaries with expanded polygons
+    """
+    # Define expansion distance (half of typical wall thickness)
+    expansion_distance = 1.0
+    
+    # First pass: Expand all rooms
+    expanded_rooms = []
+    for room in rooms:
+        # Get the original polygon
+        poly = room['polygon']
+        # Expand the polygon
+        expanded_poly = poly.buffer(expansion_distance, join_style=2)  # mitered joins
+        expanded_rooms.append({
+            'type': room['type'],
+            'original_poly': poly,
+            'expanded_poly': expanded_poly
+        })
+    
+    # Second pass: Find and create shared walls
+    processed_rooms = []
+    for i, room1 in enumerate(expanded_rooms):
+        # Find overlapping rooms
+        overlaps = []
+        for j, room2 in enumerate(expanded_rooms):
+            if i != j and room1['expanded_poly'].intersects(room2['expanded_poly']):
+                # Get the intersection of expanded polygons
+                overlap = room1['expanded_poly'].intersection(room2['expanded_poly'])
+                if isinstance(overlap, (LineString, MultiLineString)):
+                    overlaps.append(overlap)
+        
+        # Create the final polygon with shared walls
+        final_poly = room1['original_poly']
+        if overlaps:
+            # Create a union of all overlap lines
+            shared_walls = unary_union(overlaps)
+            # Combine original polygon with shared walls
+            final_poly = unary_union([final_poly, shared_walls])
+        
+        processed_rooms.append({
+            'type': room1['type'],
+            'polygon': final_poly
+        })
+    
+    return processed_rooms
+
+
 def process_room_data(assigned_rooms, scale):
+    # First expand and merge rooms to create shared walls
+    processed_rooms = expand_and_merge_rooms(assigned_rooms)
+    
     room_data = []
-    count = 0
-    # print(f"assigned_rooms {len(assigned_rooms)}")
-    for index, room in enumerate(assigned_rooms):
+    for index, room in enumerate(processed_rooms):
         width, height = calculate_dimensions(room['polygon'], scale)
-        room = {
-            "corners": [[x * scale, y * scale] for x, y in room['polygon'].exterior.coords[:-1]],  
+        is_special = room['type'] in ['living_room', 'dining_room', 'corridor']
+        room_label = room['type'] if is_special else 'room'
+        corners = [[x * scale, y * scale] 
+                  for x, y in room['polygon'].exterior.coords[:-1]]
+        room_data.append({
+            "corners": corners,
             "width": width,
             "height": height,
             "id": index,
-            "label": room['type'] + "_" + str(index),
+            "label": room_label + "_" + str(index),
             "type": room['type']
-        }
-        room_data.append(room)
-        # print(f"room_data count {count}, with {room}")
-        count +=1
+        })
+
     plan_data = {
         "data": {
             "userID": "local-test-visualizer",
@@ -179,40 +234,12 @@ def room_polygon_processing(rooms_polygons, max_base):
     return processed_rooms
 
 
-
-def process_room_data(assigned_rooms, scale):
-    room_data = []
-    for index, room in enumerate(assigned_rooms):
-        # Assuming calculate_dimensions correctly calculates dimensions from the polygon and scale
-        width, height = calculate_dimensions(room['polygon'], scale)
-        room_label = room['type'] if room['type'] in ['living_room', 'dining_room', 'corrdior'] else 'room'
-        room_data.append({
-            "corners": [[x * scale, y * scale] for x, y in room['polygon'].exterior.coords[:-1]],  
-            "width": width,
-            "height": height,
-            "id": index,
-            "label": room_label + "_" + str(index),
-            "type": room['type']
-        })
-
-    plan_data = {
-        "data": {
-            "userID": "local-test-visualizer",
-            "source": "local-editor",
-            "plans": [room_data],
-            "options": {
-                "save_image": True,
-                "add_closet": False,
-                "add_deck": False,
-                "add_walkin": False
-            }
-        }
-    }
-    return plan_data
-
-
 def parse_json_to_visualizer(room_corners, outer_contour_corners):
     filtered_polygons = [Polygon(corners) for corners in room_corners if Polygon(corners).area > 0]
+    if not filtered_polygons:
+        print("Warning: No valid room polygons found")
+        return {"data": {"plans": []}}
+        
     sorted_polygons = sorted(filtered_polygons, key=lambda p: p.area, reverse=True)
     
     max_base = (sorted_polygons[0].area + sorted_polygons[1].area) / 2 if len(sorted_polygons) > 1 else sorted_polygons[0].area

@@ -117,6 +117,22 @@ def merge_wall_processing(outer_contour_corners, room_corners):
     # Convert the room corners to shapely Polygons
     room_polygons = [Polygon(room) for room in room_corners]
     outer_contour_polygon = Polygon(outer_contour_corners)
+    
+    # If outer contour is too small, create a bounding box that contains all rooms
+    if any(not outer_contour_polygon.contains(room) for room in room_polygons):
+        minx = min(min(x for x, _ in room) for room in room_corners)
+        miny = min(min(y for _, y in room) for room in room_corners)
+        maxx = max(max(x for x, _ in room) for room in room_corners)
+        maxy = max(max(y for _, y in room) for room in room_corners)
+        # Add some padding
+        padding = 10
+        outer_contour_polygon = Polygon([
+            (minx - padding, miny - padding),
+            (maxx + padding, miny - padding),
+            (maxx + padding, maxy + padding),
+            (minx - padding, maxy + padding)
+        ])
+    
     # Estimate the wall thickness
     wall_thickness = estimate_wall_thickness(room_polygons)
     print(f"wall_thickness {wall_thickness}")
@@ -124,12 +140,7 @@ def merge_wall_processing(outer_contour_corners, room_corners):
     # Inflate the rooms without them overlapping each other
     non_overlapping_room_polygons = inflate_rooms(room_polygons, outer_contour_polygon, wall_thickness)
 
-    # # Merge walls by adjusting corners
-    # threshold = 0.5  # Set a threshold for howresolved_polygon_type close corners should be to considered them for merging
-    # merged_rooms = merge_walls([r.exterior.coords for r in non_overlapping_room_polygons], threshold)
-
     valid_polygons = []
-    # print(f"non_overlapping_room_polygons {non_overlapping_room_polygons}")
     # Filter out only Polygon and MultiPolygon objects
     for geom in non_overlapping_room_polygons:
         if isinstance(geom, (Polygon, MultiPolygon)):

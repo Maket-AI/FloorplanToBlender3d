@@ -293,13 +293,10 @@ def align_rooms_to_grid(input_data, grid_unit=3):
 
 
 def rectangularized(input_data):
+    # Handle empty plans
+    if not input_data['data']['plans']:
+        return input_data
+        
     # approximate rectangular with overlapped; then remove overlap, shape may not be rectangulars.
     data_with_polygon = transform_rectilinear(input_data)
-    # break into rectangulars rooms from a non-rectangular polygon room
-    # data_transformed_copy = copy.deepcopy(data_with_polygon)
-    # Non-rectangular-alpha, remove split_to_rectangulars.
-    # data_transformed_rect = split_to_rectangulars(data_transformed_copy)
-    # merge small gaps by grid
-    data_transformed_rect = align_rooms_to_grid(data_with_polygon, 5)
-    # check rectilinear
-    return data_transformed_rect
+    return data_with_polygon

@@ -61,12 +61,13 @@ def wall_filter(gray):
     return unknown
 
 
-def precise_boxes(detect_img, output_img=None, color=[100, 100, 0]):
+def precise_boxes(detect_img, output_img=None, color=[100, 100, 0], thickness=4):
     """
     Detect corners with boxes in image with high precision
     @Param detect_img image to detect from @mandatory
     @Param output_img image for output
     @Param color to set on output
+    @Param thickness line thickness for drawing contours
     @Return corners(list of boxes), output image
     @source https://stackoverflow.com/questions/50930033/drawing-lines-and-distance-to-them-on-image-opencv-python
     """
@@ -80,7 +81,7 @@ def precise_boxes(detect_img, output_img=None, color=[100, 100, 0]):
         epsilon = const.PRECISE_BOXES_ACCURACY * cv2.arcLength(cnt, True)
         approx = cv2.approxPolyDP(cnt, epsilon, True)
         if output_img is not None:
-            output_img = cv2.drawContours(output_img, [approx], 0, color)
+            output_img = cv2.drawContours(output_img, [approx], 0, color, thickness)
         res.append(approx)
 
     return res, output_img
@@ -200,12 +201,13 @@ def and_remove_precise_boxes(detect_img, output_img=None, color=[255, 255, 255])
     return res, output_img
 
 
-def outer_contours(detect_img, output_img=None, color=[255, 255, 255]):
+def outer_contours(detect_img, output_img=None, color=[255, 255, 255], thickness=4):
     """
     Get the outer side of floorplan, used to get ground
     @Param detect_img image to detect from @mandatory
     @Param output_img image for output
     @Param color to set on output
+    @Param thickness line thickness for drawing contours
     @Return approx, box
     @Source https://stackoverflow.com/questions/50930033/drawing-lines-and-distance-to-them-on-image-opencv-python
     """
@@ -229,7 +231,7 @@ def outer_contours(detect_img, output_img=None, color=[255, 255, 255]):
     epsilon = const.PRECISE_BOXES_ACCURACY * cv2.arcLength(largest_contour, True)
     approx = cv2.approxPolyDP(largest_contour, epsilon, True)
     if output_img is not None:
-        output_img = cv2.drawContours(output_img, [approx], 0, color)
+        output_img = cv2.drawContours(output_img, [approx], 0, color, thickness)
     return approx, output_img
 
 

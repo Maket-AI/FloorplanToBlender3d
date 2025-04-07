@@ -14,15 +14,20 @@ except ImportError:
     from FloorplanToBlenderLib import *  # floorplan to blender lib
 from subprocess import check_output
 
-def local_test():
+def local_test(image_url=None):
     print(floorplan_lib_path)
 
-    image_names = ["floorplan_google2.jpg"]
+    image_names = ["chatgpt4.png"]
     for image_name in image_names:
         input_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "events/", image_name))
         save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__),"outputs", f"detected_{image_name}"))
-        # Call the processing function
-        return detect_floorplan_image(input_image_path, save_image_path, lambda_client)
+        # Call the processing function with adjusted parameters
+        return detect_floorplan_image(
+            input_image_path, 
+            save_image_path, 
+            lambda_client, 
+            image_url
+        )
     
 
 def process_batch_test(bucket_name, prefix):
@@ -89,19 +94,7 @@ def s3_test(img_url=None):
 if __name__ == "__main__":
     # paths_dict = process_batch_test('floorplan-detector', 'test_dataset/standard/')
     # print(f"final response: {paths_dict}")
-    image_name = "simple-house-design copy.png"
-    image_name = "simple-stylish-1024x991.png"
-    image_name = "1-bedrom.jpeg"
-    # image_name = "01-online-floor-plan-maker copy.png"
     image_name = "21_52_00-plan_0-B_21_52_36.jpg"
-    # image_name = "w575.png"
-    # image_name = "simple-stylish-1024x991_makeup.png"
-    # image_name = "sample-floorplan.png"
-    # image_name = "example4 copy.png"
-    # image_name = 'simple-house-design copy 2.png'
-    # image_name = "test_6.jpeg"
-    # image_name = "RoomSketcher-House-Floor-Plans-2452430-800.jpg"
-    # image_name = "main-qimg-5614d2f44c92f49159ddb30c7f664400-lq.jpeg"
+    # Set up the image URL for local testing
     image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/test_dataset/{image_name}"
-    # image_url = f"https://floorplan-detector.s3.ca-central-1.amazonaws.com/2024-01-03/{image_name}"
-    s3_test()
+    local_test(image_url)

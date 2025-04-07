@@ -138,12 +138,20 @@ def highlight_walls(gray_image):
     max_val = np.max(gray_image)
     
     # Increase contrast for darker areas which we assume to be walls
-    contrast_increased = np.clip((gray_image - min_val) * (255 / (max_val - min_val)), 0, 255).astype(np.uint8)
+    contrast_increased = np.clip(
+        (gray_image - min_val) * (255 / (max_val - min_val)), 0, 255
+    ).astype(np.uint8)
 
-    # Apply this transformation only to the pixels below a certain intensity threshold
-    wall_threshold = 128  # Needs adjustment based on actual image
+    # Apply this transformation only to pixels below intensity threshold
+    wall_threshold = 100  # Lower threshold to catch more wall pixels
     mask = gray_image < wall_threshold
     gray_image[mask] = contrast_increased[mask]
+    
+    # Apply additional morphological operations to enhance walls
+    kernel = np.ones((3,3), np.uint8)
+    gray_image = cv2.morphologyEx(
+        gray_image, cv2.MORPH_CLOSE, kernel, iterations=2
+    )
     
     return gray_image
 
@@ -214,6 +222,9 @@ def norm_blender3d(path, save_image_path):
     # Resulting image
     height, width, channels = img.shape
     blank_image = np.zeros((height, width, 3), np.uint8)  # Output image
+    # Create white background image for the new visualization
+    white_bg_image = np.ones((height, width, 3), np.uint8) * 255
+    
     cv2.imwrite("./gray_before.png", gray)
     gray = highlight_walls(gray)
     cv2.imwrite("./gray_after.png", gray)
@@ -238,8 +249,14 @@ def norm_blender3d(path, save_image_path):
     gray = ~wall_temp
     cv2.imwrite("./gray_wall_temp.png", gray)
     try:
-        # Detect rooms
-        rooms, colored_rooms = detect.find_rooms(gray.copy())
+        # Detect rooms with adjusted parameters
+        rooms, colored_rooms = detect.find_rooms(
+            gray.copy(),
+            noise_removal_threshold=25,  # Lower to detect more features
+            corners_threshold=0.005,  # Lower to detect more corners
+            room_closing_max_length=200,  # Increase to close larger gaps
+            gap_in_wall_min_threshold=1500  # Lower to detect smaller rooms
+        )
 
         gray_rooms = cv2.cvtColor(colored_rooms, cv2.COLOR_BGR2GRAY)
         cv2.imwrite("./gray_rooms.png", gray_rooms)
@@ -249,14 +266,14 @@ def norm_blender3d(path, save_image_path):
 
         room_corners = extract_room_corners(boxes)
 
-        # Detect smaller rooms
+        # Detect smaller rooms with adjusted parameters
         s_rooms, colored_s_rooms = detect.find_details(
             gray.copy(),
-            noise_removal_threshold=50,
-            corners_threshold=0.01,
-            room_closing_max_length=100,
-            gap_in_wall_max_threshold=6000,
-            gap_in_wall_min_threshold=2000,
+            noise_removal_threshold=20,  # Lower to detect more features
+            corners_threshold=0.005,  # Lower to detect more corners
+            room_closing_max_length=200,  # Increase to close larger gaps
+            gap_in_wall_max_threshold=10000,  # Include larger rooms
+            gap_in_wall_min_threshold=800  # Lower to detect smaller rooms
         )
         gray_details = cv2.cvtColor(colored_s_rooms, cv2.COLOR_BGR2GRAY)
         cv2.imwrite("./gray_smaller_rooms.png", gray_details)
@@ -275,15 +292,32 @@ def norm_blender3d(path, save_image_path):
 
         cv2.imwrite("./blank_image.png", blank_image)
 
-        # Save the processed image
+        # Save the original processed image
         cv2.imwrite(save_image_path, blank_image)
         print(f"Processed image saved as {save_image_path}")
+
+        # Create the new visualization with white background
+        # Draw outer contour in blue
+        if contour is not None:
+            cv2.drawContours(blank_image, [contour], -1, (255, 0, 0), 4)
+        
+        # Draw regular rooms in black
+        for box in boxes:
+            cv2.drawContours(blank_image, [box], -1, (255, 215, 0), 4)
+        
+        # Draw smaller rooms in green
+        for box in s_room_boxes:
+            cv2.drawContours(blank_image, [box], -1, (0, 200, 100), 4)
+        
+        # Save the new visualization
+        new_save_path = save_image_path.replace('.png', '_white.png')
+        cv2.imwrite(new_save_path, blank_image)
+        print(f"White background visualization saved as {new_save_path}")
+
         # Example: Print the corners of the first room
         if room_corners:
             print(f"there are {len(s_room_corners)} smaller rooms, the corner list: {s_room_corners}")
             print(f"there are {len(room_corners)} rooms, the corner list: {room_corners}")
-            # for corner in room_corners:
-            #     print("Corner", corner)
 
     except Exception as e:
         print(f"Error occurred in find_rooms: {e}")
