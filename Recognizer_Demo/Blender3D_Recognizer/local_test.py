@@ -17,12 +17,12 @@ from subprocess import check_output
 def local_test(image_url=None):
     print(floorplan_lib_path)
 
-    image_names = ["chatgpt4.png"]
+    image_names = ["example_simple.jpg"]
     for image_name in image_names:
-        input_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "events/", image_name))
+        input_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../events/", image_name))
         save_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__),"outputs", f"detected_{image_name}"))
         # Call the processing function with adjusted parameters
-        return detect_floorplan_image(
+        detect_floorplan_image(
             input_image_path, 
             save_image_path, 
             lambda_client, 

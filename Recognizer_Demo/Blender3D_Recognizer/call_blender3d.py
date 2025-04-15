@@ -4,8 +4,15 @@ import cv2
 import numpy as np
 import sys
 import os
+import json
+import math
+from shapely.geometry import MultiPoint, LineString, MultiLineString
+from shapely.ops import unary_union
+import matplotlib.pyplot as plt
+import datetime
+from urllib.parse import urlparse
 
-floorplan_lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+floorplan_lib_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 try:
     sys.path.insert(0, floorplan_lib_path)
     from FloorplanToBlenderLib import *  # floorplan to blender lib
@@ -252,10 +259,10 @@ def norm_blender3d(path, save_image_path):
         # Detect rooms with adjusted parameters
         rooms, colored_rooms = detect.find_rooms(
             gray.copy(),
-            noise_removal_threshold=25,  # Lower to detect more features
-            corners_threshold=0.005,  # Lower to detect more corners
-            room_closing_max_length=200,  # Increase to close larger gaps
-            gap_in_wall_min_threshold=1500  # Lower to detect smaller rooms
+            noise_removal_threshold=50,  # Increased to remove more noise
+            corners_threshold=0.01,  # Increased to detect more corners
+            room_closing_max_length=150,  # Increased to close larger gaps
+            gap_in_wall_min_threshold=5000  # Increased to detect larger rooms
         )
 
         gray_rooms = cv2.cvtColor(colored_rooms, cv2.COLOR_BGR2GRAY)
@@ -269,11 +276,11 @@ def norm_blender3d(path, save_image_path):
         # Detect smaller rooms with adjusted parameters
         s_rooms, colored_s_rooms = detect.find_details(
             gray.copy(),
-            noise_removal_threshold=20,  # Lower to detect more features
-            corners_threshold=0.005,  # Lower to detect more corners
-            room_closing_max_length=200,  # Increase to close larger gaps
-            gap_in_wall_max_threshold=10000,  # Include larger rooms
-            gap_in_wall_min_threshold=800  # Lower to detect smaller rooms
+            noise_removal_threshold=50,  # Increased to remove more noise
+            corners_threshold=0.01,  # Increased to detect more corners
+            room_closing_max_length=150,  # Increased to close larger gaps
+            gap_in_wall_max_threshold=6000,  # Increased to include larger rooms
+            gap_in_wall_min_threshold=2000  # Increased to detect larger rooms
         )
         gray_details = cv2.cvtColor(colored_s_rooms, cv2.COLOR_BGR2GRAY)
         cv2.imwrite("./gray_smaller_rooms.png", gray_details)
