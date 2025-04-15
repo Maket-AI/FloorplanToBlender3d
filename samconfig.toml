@@ -1,7 +1,0 @@
-version = 0.1
-
-[default.deploy.parameters]
-stack_name = "floorplan-detector"
-region = "ca-central-1"
-parameter_overrides = "Stage=q1"
-capabilities = "CAPABILITY_IAM"
