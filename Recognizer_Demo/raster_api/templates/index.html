@@ -6,84 +6,132 @@
     <title>Floor Plan Recognizer (api-raster)</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
             padding: 20px;
             background-color: #f5f5f5;
         }
         .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
             background-color: white;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         .upload-section {
             margin-bottom: 20px;
-            text-align: center;
             padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 800px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            text-align: center;
         }
-        .visualization-container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-            margin-top: 20px;
-        }
-        .canvas-section {
-            flex: 1;
+        .result-section {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            width: 100%;
         }
-        .canvas-section h3 {
-            margin-bottom: 10px;
-        }
-        #originalImage {
-            max-width: 100%;
-            height: auto;
+        .image-container {
+            width: 100%;
             margin-bottom: 20px;
         }
-        #canvas {
+        .canvas-container {
+            position: relative;
             width: 100%;
             height: 600px;
             border: 1px solid #ddd;
+            margin-top: 20px;
+            background-color: white;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(to right, #eee 1px, transparent 1px),
+                linear-gradient(to bottom, #eee 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        #loadingMessage {
-            display: none;
-            color: #666;
-            margin: 10px 0;
+        #floorplan-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
         }
-        .error {
-            color: #dc3545;
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #f8d7da;
-            border-radius: 4px;
-            display: none;
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
         }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        input[type="file"] {
-            padding: 10px;
+        .toolbar button {
+            padding: 5px 10px;
+            background-color: #f0f0f0;
             border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .toolbar button:hover {
+            background-color: #e0e0e0;
+        }
+        .room-label {
+            position: absolute;
+            font-size: 12px;
+            color: #333;
+            pointer-events: none;
+        }
+        .dimension-label {
+            position: absolute;
+            font-size: 10px;
+            color: #666;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 2px 4px;
+            border-radius: 2px;
+            pointer-events: none;
+        }
+        /* Loading spinner and progress bar */
+        .loader-container {
+            display: none;
+            margin: 20px auto;
+            text-align: center;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 10px;
+        }
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 10px auto;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #4CAF50;
+            width: 0%;
             border-radius: 4px;
+            transition: width 0.5s;
+        }
+        .timer {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
@@ -98,281 +146,44 @@
             <div id="errorMessage" class="error"></div>
         </div>
         
-        <div class="visualization-container">
-            <div class="canvas-section">
-                <h3>Original Image</h3>
-                <img id="originalImage" style="display: none;">
+        <div class="loader-container" id="loader-container">
+            <div class="loader"></div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
-            <div class="canvas-section">
+            <div class="timer" id="timer">Processing: 0 seconds</div>
+        </div>
+        
+        <div class="result-section">
+            <div class="image-container">
+                <h3>Original Image</h3>
+                <img id="original-image" style="max-width: 100%; height: auto;" />
+            </div>
+            
+            <div class="image-container">
                 <h3>Floor Plan Visualization</h3>
-                <canvas id="canvas"></canvas>
+                <div class="toolbar">
+                    <button id="zoom-in">Zoom In</button>
+                    <button id="zoom-out">Zoom Out</button>
+                    <button id="reset-view">Reset View</button>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="floorplan-canvas"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         function renderFloorPlan(data) {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
+            currentData = data;
             
-            // Set canvas size
-            canvas.width = 800;
-            canvas.height = 600;
+            // Resize the canvas to fit its container
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
             
-            // Clear canvas
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Find the bounds of the floor plan
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            
-            if (data.walls && data.walls.length > 0) {
-                data.walls.forEach(wall => {
-                    if (wall.start && wall.end) {
-                        minX = Math.min(minX, wall.start.x, wall.end.x);
-                        minY = Math.min(minY, wall.start.y, wall.end.y);
-                        maxX = Math.max(maxX, wall.start.x, wall.end.x);
-                        maxY = Math.max(maxY, wall.start.y, wall.end.y);
-                    }
-                });
-            }
-            
-            // Add padding
-            const padding = 50;
-            minX -= padding;
-            minY -= padding;
-            maxX += padding;
-            maxY += padding;
-            
-            // Calculate scale to fit the floor plan in the canvas
-            const scaleX = canvas.width / (maxX - minX);
-            const scaleY = canvas.height / (maxY - minY);
-            const scale = Math.min(scaleX, scaleY);
-            
-            // Calculate offset to center the floor plan
-            const offsetX = (canvas.width - (maxX - minX) * scale) / 2;
-            const offsetY = (canvas.height - (maxY - minY) * scale) / 2;
-            
-            // Helper function to transform coordinates
-            const transform = (x, y) => {
-                return {
-                    x: (x - minX) * scale + offsetX,
-                    y: (y - minY) * scale + offsetY
-                };
-            };
-            
-            // Draw walls
-            if (data.walls && data.walls.length > 0) {
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 2;
-                
-                data.walls.forEach(wall => {
-                    if (wall.start && wall.end) {
-                        const start = transform(wall.start.x, wall.start.y);
-                        const end = transform(wall.end.x, wall.end.y);
-                        
-                        ctx.beginPath();
-                        ctx.moveTo(start.x, start.y);
-                        ctx.lineTo(end.x, end.y);
-                        ctx.stroke();
-                        
-                        // Draw measurement
-                        const length = Math.sqrt(
-                            Math.pow(wall.end.x - wall.start.x, 2) +
-                            Math.pow(wall.end.y - wall.start.y, 2)
-                        );
-                        const midX = (start.x + end.x) / 2;
-                        const midY = (start.y + end.y) / 2;
-                        
-                        // Draw dimension line
-                        const angle = Math.atan2(end.y - start.y, end.x - start.x);
-                        const perpAngle = angle + Math.PI / 2;
-                        const dimLineLength = 10;
-                        
-                        ctx.beginPath();
-                        ctx.moveTo(midX - Math.cos(perpAngle) * dimLineLength, 
-                                 midY - Math.sin(perpAngle) * dimLineLength);
-                        ctx.lineTo(midX + Math.cos(perpAngle) * dimLineLength, 
-                                 midY + Math.sin(perpAngle) * dimLineLength);
-                        ctx.stroke();
-                        
-                        // Draw measurement text
-                        ctx.fillStyle = 'black';
-                        ctx.font = '12px Arial';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.save();
-                        ctx.translate(midX, midY);
-                        ctx.rotate(angle);
-                        ctx.fillText(`${Math.round(length)}cm`, 0, -15);
-                        ctx.restore();
-                    }
-                });
-            }
-            
-            // Draw doors
-            if (data.doors && data.doors.length > 0) {
-                data.doors.forEach(door => {
-                    if (door.position) {
-                        const pos = transform(door.position.x, door.position.y);
-                        
-                        // Find nearest wall to align the door
-                        let nearestWall = null;
-                        let minDistance = Infinity;
-                        
-                        if (data.walls && data.walls.length > 0) {
-                            data.walls.forEach(wall => {
-                                if (wall.start && wall.end) {
-                                    const start = transform(wall.start.x, wall.start.y);
-                                    const end = transform(wall.end.x, wall.end.y);
-                                    
-                                    // Calculate distance from point to line
-                                    const A = pos.x - start.x;
-                                    const B = pos.y - start.y;
-                                    const C = end.x - start.x;
-                                    const D = end.y - start.y;
-                                    
-                                    const dot = A * C + B * D;
-                                    const lenSq = C * C + D * D;
-                                    let param = -1;
-                                    
-                                    if (lenSq !== 0) param = dot / lenSq;
-                                    
-                                    let xx, yy;
-                                    
-                                    if (param < 0) {
-                                        xx = start.x;
-                                        yy = start.y;
-                                    } else if (param > 1) {
-                                        xx = end.x;
-                                        yy = end.y;
-                                    } else {
-                                        xx = start.x + param * C;
-                                        yy = start.y + param * D;
-                                    }
-                                    
-                                    const dx = pos.x - xx;
-                                    const dy = pos.y - yy;
-                                    const distance = Math.sqrt(dx * dx + dy * dy);
-                                    
-                                    if (distance < minDistance) {
-                                        minDistance = distance;
-                                        nearestWall = wall;
-                                    }
-                                }
-                            });
-                        }
-                        
-                        // Draw the door
-                        if (nearestWall) {
-                            const angle = Math.atan2(
-                                nearestWall.end.y - nearestWall.start.y,
-                                nearestWall.end.x - nearestWall.start.x
-                            );
-                            
-                            ctx.save();
-                            ctx.translate(pos.x, pos.y);
-                            ctx.rotate(angle);
-                            
-                            // Draw door as a brown rectangle
-                            ctx.fillStyle = 'brown';
-                            ctx.fillRect(-15, -2.5, 30, 5);
-                            ctx.strokeStyle = 'black';
-                            ctx.strokeRect(-15, -2.5, 30, 5);
-                            
-                            ctx.restore();
-                        } else {
-                            // Fallback if no wall is found
-                            ctx.fillStyle = 'brown';
-                            ctx.fillRect(pos.x - 15, pos.y - 2.5, 30, 5);
-                            ctx.strokeStyle = 'black';
-                            ctx.strokeRect(pos.x - 15, pos.y - 2.5, 30, 5);
-                        }
-                    }
-                });
-            }
-            
-            // Draw windows
-            if (data.windows && data.windows.length > 0) {
-                data.windows.forEach(window => {
-                    if (window.position) {
-                        const pos = transform(window.position.x, window.position.y);
-                        
-                        // Find nearest wall to align the window
-                        let nearestWall = null;
-                        let minDistance = Infinity;
-                        
-                        if (data.walls && data.walls.length > 0) {
-                            data.walls.forEach(wall => {
-                                if (wall.start && wall.end) {
-                                    const start = transform(wall.start.x, wall.start.y);
-                                    const end = transform(wall.end.x, wall.end.y);
-                                    
-                                    // Calculate distance from point to line
-                                    const A = pos.x - start.x;
-                                    const B = pos.y - start.y;
-                                    const C = end.x - start.x;
-                                    const D = end.y - start.y;
-                                    
-                                    const dot = A * C + B * D;
-                                    const lenSq = C * C + D * D;
-                                    let param = -1;
-                                    
-                                    if (lenSq !== 0) param = dot / lenSq;
-                                    
-                                    let xx, yy;
-                                    
-                                    if (param < 0) {
-                                        xx = start.x;
-                                        yy = start.y;
-                                    } else if (param > 1) {
-                                        xx = end.x;
-                                        yy = end.y;
-                                    } else {
-                                        xx = start.x + param * C;
-                                        yy = start.y + param * D;
-                                    }
-                                    
-                                    const dx = pos.x - xx;
-                                    const dy = pos.y - yy;
-                                    const distance = Math.sqrt(dx * dx + dy * dy);
-                                    
-                                    if (distance < minDistance) {
-                                        minDistance = distance;
-                                        nearestWall = wall;
-                                    }
-                                }
-                            });
-                        }
-                        
-                        // Draw the window
-                        if (nearestWall) {
-                            const angle = Math.atan2(
-                                nearestWall.end.y - nearestWall.start.y,
-                                nearestWall.end.x - nearestWall.start.x
-                            );
-                            
-                            ctx.save();
-                            ctx.translate(pos.x, pos.y);
-                            ctx.rotate(angle);
-                            
-                            // Draw window as a light blue rectangle
-                            ctx.fillStyle = 'lightblue';
-                            ctx.fillRect(-20, -2.5, 40, 5);
-                            ctx.strokeStyle = 'black';
-                            ctx.strokeRect(-20, -2.5, 40, 5);
-                            
-                            ctx.restore();
-                        } else {
-                            // Fallback if no wall is found
-                            ctx.fillStyle = 'lightblue';
-                            ctx.fillRect(pos.x - 20, pos.y - 2.5, 40, 5);
-                            ctx.strokeStyle = 'black';
-                            ctx.strokeRect(pos.x - 20, pos.y - 2.5, 40, 5);
-                        }
-                    }
-                });
-            }
+            redrawCanvas();
         }
 
         function processImage() {
@@ -383,12 +194,37 @@
                 return;
             }
             
-            // Show loading indicator
+            // Show loading indicator and start progress
             document.getElementById('loadingMessage').style.display = 'block';
             document.getElementById('errorMessage').style.display = 'none';
             
+            const loaderContainer = document.getElementById('loader-container');
+            const progressBar = document.getElementById('progress-bar');
+            const timerElement = document.getElementById('timer');
+            
+            loaderContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            // Start timing
+            let seconds = 0;
+            const timer = setInterval(() => {
+                seconds++;
+                timerElement.textContent = `Processing: ${seconds} seconds`;
+                
+                // Update progress bar - increases more quickly at first, then slows down
+                let progress = 0;
+                if (seconds < 3) {
+                    progress = seconds * 20; // Fast initial progress
+                } else if (seconds < 10) {
+                    progress = 60 + (seconds - 3) * 3; // Slower after 3 seconds
+                } else {
+                    progress = 80 + Math.min((seconds - 10) * 0.5, 15); // Very slow after 10 seconds
+                }
+                progressBar.style.width = `${Math.min(progress, 95)}%`; // Never reach 100% until completion
+            }, 1000);
+            
             // Display the original image
-            const originalImage = document.getElementById('originalImage');
+            const originalImage = document.getElementById('original-image');
             originalImage.style.display = 'block';
             originalImage.src = URL.createObjectURL(fileInput.files[0]);
             
@@ -408,8 +244,14 @@
                 return response.json();
             })
             .then(data => {
-                // Hide loading indicator
+                // Hide loading indicator and complete progress
                 document.getElementById('loadingMessage').style.display = 'none';
+                clearInterval(timer);
+                progressBar.style.width = '100%';
+                
+                setTimeout(() => {
+                    loaderContainer.style.display = 'none';
+                }, 500);
                 
                 // Check if the response contains an error
                 if (data.error) {
@@ -426,48 +268,30 @@
                         // Check if wall.position exists and has the expected structure
                         if (!wall.position || !Array.isArray(wall.position) || wall.position.length < 2) {
                             console.warn("Invalid wall data:", wall);
-                            return { start: { x: 0, y: 0 }, end: { x: 0, y: 0 } };
+                            return { position: [0, 0] };
                         }
                         
-                        return {
-                            start: { 
-                                x: wall.position[0][0] || 0, 
-                                y: wall.position[0][1] || 0 
-                            },
-                            end: { 
-                                x: wall.position[1][0] || 0, 
-                                y: wall.position[1][1] || 0 
-                            }
-                        };
+                        return { position: wall.position };
                     }),
                     doors: (data.doors || []).map(door => {
                         // Check if door.position exists and has the expected structure
                         if (!door.position || !Array.isArray(door.position) || door.position.length < 2) {
                             console.warn("Invalid door data:", door);
-                            return { position: { x: 0, y: 0 } };
+                            return { position: [0, 0] };
                         }
                         
-                        return {
-                            position: { 
-                                x: door.position[0] || 0, 
-                                y: door.position[1] || 0 
-                            }
-                        };
+                        return { position: door.position };
                     }),
                     windows: (data.windows || []).map(window => {
                         // Check if window.position exists and has the expected structure
                         if (!window.position || !Array.isArray(window.position) || window.position.length < 2) {
                             console.warn("Invalid window data:", window);
-                            return { position: { x: 0, y: 0 } };
+                            return { position: [0, 0] };
                         }
                         
-                        return {
-                            position: { 
-                                x: window.position[0] || 0, 
-                                y: window.position[1] || 0 
-                            }
-                        };
-                    })
+                        return { position: window.position };
+                    }),
+                    rooms: data.rooms
                 };
                 
                 console.log("Transformed Data:", transformedData);
@@ -478,6 +302,8 @@
             .catch(error => {
                 // Hide loading indicator
                 document.getElementById('loadingMessage').style.display = 'none';
+                clearInterval(timer);
+                loaderContainer.style.display = 'none';
                 
                 // Display error message
                 document.getElementById('errorMessage').textContent = error.message;
@@ -485,6 +311,377 @@
                 console.error('Error:', error);
             });
         }
+
+        // Canvas rendering functions
+        let scale = 1;
+        let offsetX = 0;
+        let offsetY = 0;
+        let isDragging = false;
+        let startX, startY;
+        
+        const canvas = document.getElementById('floorplan-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Zoom and pan controls
+        document.getElementById('zoom-in').addEventListener('click', function() {
+            scale *= 1.2;
+            redrawCanvas();
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', function() {
+            scale *= 0.8;
+            redrawCanvas();
+        });
+        
+        document.getElementById('reset-view').addEventListener('click', function() {
+            scale = 1;
+            offsetX = 0;
+            offsetY = 0;
+            redrawCanvas();
+        });
+        
+        canvas.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+        
+        canvas.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                offsetX += dx;
+                offsetY += dy;
+                startX = e.clientX;
+                startY = e.clientY;
+                redrawCanvas();
+            }
+        });
+        
+        canvas.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+        
+        canvas.addEventListener('mouseleave', function() {
+            isDragging = false;
+        });
+        
+        // Function to find the nearest wall to a point
+        function findNearestWall(point, walls) {
+            if (!walls || !Array.isArray(walls) || walls.length === 0) {
+                return null;
+            }
+            
+            let minDist = Infinity;
+            let nearestWall = null;
+            
+            walls.forEach(wall => {
+                if (wall.position && wall.position.length >= 2) {
+                    const start = wall.position[0];
+                    const end = wall.position[1];
+                    
+                    const dist = pointToLineDistance(point, start, end);
+                    
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearestWall = wall;
+                    }
+                }
+            });
+            
+            return nearestWall;
+        }
+        
+        // Function to calculate distance from point to line segment
+        function pointToLineDistance(point, lineStart, lineEnd) {
+            const [x, y] = point;
+            const [x1, y1] = lineStart;
+            const [x2, y2] = lineEnd;
+            
+            const A = x - x1;
+            const B = y - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            
+            if (lenSq !== 0) {
+                param = dot / lenSq;
+            }
+            
+            let xx, yy;
+            
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            const dx = x - xx;
+            const dy = y - yy;
+            
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        // Function to align an item to a wall
+        function alignToWall(item, wall) {
+            const start = wall.position[0];
+            const end = wall.position[1];
+            
+            // Calculate wall direction
+            const dx = end[0] - start[0];
+            const dy = end[1] - start[1];
+            const length = Math.sqrt(dx * dx + dy * dy);
+            
+            // Normalize direction
+            const nx = dx / length;
+            const ny = dy / length;
+            
+            // Create the aligned item
+            return {
+                start: [item.position[0], item.position[1]],
+                end: [item.position[0] + nx * 10, item.position[1] + ny * 10],
+                normal: [nx, ny],
+                wall: wall
+            };
+        }
+        
+        // Store the current data to enable redrawing
+        let currentData = null;
+        
+        function redrawCanvas() {
+            if (!currentData) return;
+            
+            const data = currentData;
+            
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Find boundaries to calculate proper scaling
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            
+            data.walls.forEach(wall => {
+                const [start, end] = wall.position;
+                minX = Math.min(minX, start[0], end[0]);
+                minY = Math.min(minY, start[1], end[1]);
+                maxX = Math.max(maxX, start[0], end[0]);
+                maxY = Math.max(maxY, start[1], end[1]);
+            });
+            
+            // Add padding
+            const padding = 50;
+            minX -= padding;
+            minY -= padding;
+            maxX += padding;
+            maxY += padding;
+            
+            const width = maxX - minX;
+            const height = maxY - minY;
+            
+            // Calculate scaling factor to fit the canvas
+            const scaleX = canvas.width / width;
+            const scaleY = canvas.height / height;
+            const baseScale = Math.min(scaleX, scaleY);
+            
+            // Helper function to transform coordinates
+            const transform = (x, y) => {
+                const scaledX = (x - minX) * scale * baseScale;
+                const scaledY = (y - minY) * scale * baseScale;
+                return {
+                    x: scaledX + offsetX,
+                    y: scaledY + offsetY
+                };
+            };
+            
+            // Apply transformations
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+            ctx.scale(scale * baseScale, scale * baseScale);
+            ctx.translate(-minX, -minY);
+            
+            // Draw rooms with light colors
+            if (data.rooms) {
+                data.rooms.forEach((room, index) => {
+                    if (room.length >= 3) { // Need at least 3 points for a room
+                        ctx.fillStyle = `hsla(${index * 30 % 360}, 70%, 85%, 0.3)`;
+                        ctx.beginPath();
+                        ctx.moveTo(room[0].x, room[0].y);
+                        
+                        for (let i = 1; i < room.length; i++) {
+                            ctx.lineTo(room[i].x, room[i].y);
+                        }
+                        
+                        ctx.closePath();
+                        ctx.fill();
+                        
+                        // Add room label
+                        const centerX = room.reduce((sum, point) => sum + point.x, 0) / room.length;
+                        const centerY = room.reduce((sum, point) => sum + point.y, 0) / room.length;
+                        
+                        ctx.fillStyle = '#333';
+                        ctx.font = `${12 / (scale * baseScale)}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(`Room ${index + 1}`, centerX, centerY);
+                    }
+                });
+            }
+            
+            // Draw walls with improved styling
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3 / (scale * baseScale);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            data.walls.forEach(wall => {
+                const [start, end] = wall.position;
+                ctx.beginPath();
+                ctx.moveTo(start[0], start[1]);
+                ctx.lineTo(end[0], end[1]);
+                ctx.stroke();
+            });
+            
+            // Draw doors with improved styling and alignment
+            if (data.doors && data.doors.length > 0) {
+                data.doors.forEach(door => {
+                    if (!door.position || door.position.length < 2) return;
+                    
+                    const [start, end] = door.position;
+                    const centerX = (start[0] + end[0]) / 2;
+                    const centerY = (start[1] + end[1]) / 2;
+                    
+                    // Find nearest wall for alignment
+                    const nearestWall = findNearestWall([centerX, centerY], data.walls);
+                    if (!nearestWall) return;
+                    
+                    const wallStart = nearestWall.position[0];
+                    const wallEnd = nearestWall.position[1];
+                    const wallAngle = Math.atan2(wallEnd[1] - wallStart[1], wallEnd[0] - wallStart[0]);
+                    
+                    // Door dimensions
+                    const doorWidth = 40;
+                    const doorThickness = 8;
+                    
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(wallAngle);
+                    
+                    // Draw door frame
+                    ctx.strokeStyle = '#4682B4';
+                    ctx.lineWidth = 2 / (scale * baseScale);
+                    ctx.fillStyle = '#ADD8E6';
+                    ctx.fillRect(-doorWidth/2, -doorThickness/2, doorWidth, doorThickness);
+                    ctx.strokeRect(-doorWidth/2, -doorThickness/2, doorWidth, doorThickness);
+                    
+                    // Draw door swing arc
+                    ctx.beginPath();
+                    ctx.arc(0, 0, doorWidth/2, 0, Math.PI/2);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                });
+            }
+            
+            // Draw windows with improved styling and alignment
+            if (data.windows && data.windows.length > 0) {
+                data.windows.forEach(window => {
+                    if (!window.position || window.position.length < 2) return;
+                    
+                    const [start, end] = window.position;
+                    const centerX = (start[0] + end[0]) / 2;
+                    const centerY = (start[1] + end[1]) / 2;
+                    
+                    // Find nearest wall for alignment
+                    const nearestWall = findNearestWall([centerX, centerY], data.walls);
+                    if (!nearestWall) return;
+                    
+                    const wallStart = nearestWall.position[0];
+                    const wallEnd = nearestWall.position[1];
+                    const wallAngle = Math.atan2(wallEnd[1] - wallStart[1], wallEnd[0] - wallStart[0]);
+                    
+                    // Window dimensions
+                    const windowWidth = 50;
+                    const windowThickness = 6;
+                    const lineSpacing = 8;
+                    
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(wallAngle);
+                    
+                    // Draw window frame
+                    ctx.strokeStyle = '#4682B4';
+                    ctx.lineWidth = 2 / (scale * baseScale);
+                    ctx.strokeRect(-windowWidth/2, -windowThickness/2, windowWidth, windowThickness);
+                    
+                    // Draw window lines
+                    ctx.beginPath();
+                    ctx.moveTo(-windowWidth/2, -lineSpacing/2);
+                    ctx.lineTo(windowWidth/2, -lineSpacing/2);
+                    ctx.moveTo(-windowWidth/2, lineSpacing/2);
+                    ctx.lineTo(windowWidth/2, lineSpacing/2);
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                });
+            }
+            
+            // Draw measurements with improved styling
+            const measurementOffset = 20 / (scale * baseScale);
+            ctx.strokeStyle = '#666';
+            ctx.fillStyle = '#333';
+            ctx.font = `${10 / (scale * baseScale)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineWidth = 1 / (scale * baseScale);
+            
+            data.walls.forEach(wall => {
+                const [start, end] = wall.position;
+                const dx = end[0] - start[0];
+                const dy = end[1] - start[1];
+                const length = Math.sqrt(dx * dx + dy * dy);
+                
+                if (length > 50) {  // Only show measurements for significant walls
+                    const midX = (start[0] + end[0]) / 2;
+                    const midY = (start[1] + end[1]) / 2;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Draw measurement line
+                    ctx.save();
+                    ctx.translate(midX, midY);
+                    ctx.rotate(angle);
+                    
+                    // Draw tick marks
+                    ctx.beginPath();
+                    ctx.moveTo(-5, -measurementOffset);
+                    ctx.lineTo(5, -measurementOffset);
+                    ctx.stroke();
+                    
+                    // Draw measurement text
+                    ctx.rotate(-angle);  // Rotate back for text
+                    ctx.fillText(`${Math.round(length)} cm`, 0, -measurementOffset - 10);
+                    
+                    ctx.restore();
+                }
+            });
+            
+            ctx.restore();
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (currentData) {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+                redrawCanvas();
+            }
+        });
     </script>
 </body>
 </html> 

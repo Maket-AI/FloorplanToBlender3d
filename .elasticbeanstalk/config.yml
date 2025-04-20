@@ -2,7 +2,8 @@ branch-defaults:
   default:
     environment: optimizer-demo-env
   master:
-    environment: optimizer-demo-env
+    environment: floorplan-api-env
+    group_suffix: null
 global:
   application_name: optimizer-demo
   branch: null

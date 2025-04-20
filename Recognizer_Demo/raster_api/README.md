@@ -1,6 +1,82 @@
-# Floor Plan Raster API
+# Floor Plan Recognition API
 
-This folder contains scripts for testing and using the Floor Plan Digitalization API from RapidAPI. The API converts raster floor plan images into vectorized data with room detection and measurements.
+This API service processes floor plan images and returns structured data about walls, rooms, doors, and windows.
+
+## Local Development
+
+1. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the development server:
+```bash
+python app.py
+```
+
+## AWS Elastic Beanstalk Deployment
+
+### Prerequisites
+
+1. AWS Account with appropriate permissions
+2. AWS CLI installed and configured
+3. GitHub repository with the following secrets:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+
+### Deployment Steps
+
+1. Create an Elastic Beanstalk application:
+```bash
+eb init floorplan-api --platform python-3.7 --region us-east-1
+```
+
+2. Create an environment:
+```bash
+eb create floorplan-api-env
+```
+
+3. The GitHub Actions workflow will automatically deploy when you push to the main branch.
+
+### Manual Deployment
+
+To deploy manually using the AWS CLI:
+
+```bash
+eb deploy
+```
+
+## Environment Variables
+
+- `FLASK_APP`: Set to `app.py`
+- `FLASK_ENV`: Set to `production` for deployment
+- Add any API keys or sensitive data as environment variables in Elastic Beanstalk
+
+## API Endpoints
+
+- `POST /process`: Upload and process a floor plan image
+  - Accepts multipart/form-data with an image file
+  - Returns JSON with detected elements (walls, rooms, doors, windows)
+
+## Architecture
+
+The application uses:
+- Flask for the web framework
+- Gunicorn as the WSGI server
+- AWS Elastic Beanstalk for deployment
+- GitHub Actions for CI/CD
+
+## Monitoring and Logging
+
+- Application logs are available in the Elastic Beanstalk console
+- CloudWatch metrics are automatically collected
+- Health checks are configured through Elastic Beanstalk
 
 ## Features
 
