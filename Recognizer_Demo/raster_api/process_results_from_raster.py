@@ -3,6 +3,7 @@ import logging
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -164,7 +165,7 @@ def process_doors_and_windows(doors, walls):
             # For doors, find the actual line segment where the door intersects with the wall
             wall_p1, wall_p2 = nearest_wall["position"]
             
-            # Project door bbox corners onto the wall line
+            # Project door bbox corners onto the wall
             bbox_corners = [
                 [bbox[0][0], bbox[0][1]],  # top-left
                 [bbox[1][0], bbox[1][1]],  # top-right
@@ -699,37 +700,6 @@ def test_floorplan_visualization():
             test_data = json.load(f)
     except FileNotFoundError:
         logger.error("Test data file not found. Using sample data.")
-        # Use sample data
-        test_data = {
-            "walls": [
-                {"position": [[0, 0], [100, 0]]},
-                {"position": [[100, 0], [100, 100]]},
-                {"position": [[100, 100], [0, 100]]},
-                {"position": [[0, 100], [0, 0]]}
-            ],
-            "rooms": [
-                [
-                    {"id": "1", "x": 0, "y": 0},
-                    {"id": "2", "x": 100, "y": 0},
-                    {"id": "3", "x": 100, "y": 100},
-                    {"id": "4", "x": 0, "y": 100}
-                ]
-            ],
-            "doors": [
-                {
-                    "points": [[40, 0], [60, 0]],
-                    "width": 20,
-                    "thickness": 5
-                }
-            ],
-            "windows": [
-                {
-                    "points": [[20, 100], [40, 100]],
-                    "width": 20,
-                    "lineSpacing": 4
-                }
-            ]
-        }
     
     # Process the data
     processed_data = process_result_for_frontend(test_data)
@@ -738,5 +708,115 @@ def test_floorplan_visualization():
     fig, ax = plot_complete_floorplan(processed_data)
     plt.show()
 
+def test_door_window_processing_with_visualization():
+    """
+    Test function to visualize metadata (bounding boxes) from the API response.
+    Uses the example_simple_result.json file to display the raw data.
+    Doors are drawn as simple lines at wall intersections.
+    """
+    # Load example data from file
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    example_file = os.path.join(script_dir, 'outputs', 'example_simple_result.json')
+    try:
+        with open(example_file, 'r') as f:
+            example_data = json.load(f)
+    except FileNotFoundError:
+        print(f"Error: {example_file} not found")
+        return
+
+    # Get walls and doors from example data
+    walls = example_data.get("walls", [])
+    doors = example_data.get("doors", [])
+    
+    # Create visualization with higher resolution
+    plt.figure(figsize=(20, 20))
+    
+    # Plot walls with thicker lines
+    for wall in walls:
+        p1, p2 = wall["position"]
+        plt.plot([p1[0], p2[0]], [p1[1], p2[1]], 'k-', linewidth=3, label='Wall' if wall == walls[0] else "")
+    
+    # Plot doors as simple lines
+    for i, door in enumerate(doors):
+        bbox = door.get("bbox", [])
+        if bbox and len(bbox) >= 4:
+            # Calculate center and dimensions
+            center_x = (bbox[0][0] + bbox[2][0]) / 2
+            center_y = (bbox[0][1] + bbox[2][1]) / 2
+            width = bbox[2][0] - bbox[0][0]
+            height = bbox[2][1] - bbox[0][1]
+            ratio = width / height
+            
+            # Find nearest wall
+            center_point = [center_x, center_y]
+            nearest_wall = find_nearest_wall(center_point, walls)
+            
+            if nearest_wall:
+                wall_p1, wall_p2 = nearest_wall["position"]
+                wall_vector = [wall_p2[0] - wall_p1[0], wall_p2[1] - wall_p1[1]]
+                wall_length = math.sqrt(wall_vector[0]**2 + wall_vector[1]**2)
+                wall_unit_vector = [wall_vector[0]/wall_length, wall_vector[1]/wall_length]
+                wall_angle = math.atan2(wall_vector[1], wall_vector[0])
+                
+                # Project center point onto wall
+                projected_point = find_wall_intersection(center_point, nearest_wall)
+                
+                # Determine door width based on orientation relative to wall
+                wall_direction = math.atan2(wall_p2[1] - wall_p1[1], wall_p2[0] - wall_p1[0])
+                bbox_direction = math.atan2(bbox[2][1] - bbox[0][1], bbox[2][0] - bbox[0][0])
+                angle_diff = abs(wall_direction - bbox_direction) % math.pi
+                
+                # Use width or height based on alignment with wall
+                if angle_diff < math.pi/4 or angle_diff > 3*math.pi/4:
+                    door_width = width
+                else:
+                    door_width = height
+                
+                # Ensure minimum door width
+                door_width = max(door_width, 30)
+                half_width = door_width / 2
+                
+                # Calculate door endpoints along the wall using wall unit vector
+                door_start = [
+                    projected_point[0] - half_width * wall_unit_vector[0],
+                    projected_point[1] - half_width * wall_unit_vector[1]
+                ]
+                door_end = [
+                    projected_point[0] + half_width * wall_unit_vector[0],
+                    projected_point[1] + half_width * wall_unit_vector[1]
+                ]
+                
+                # Draw door as a simple line
+                plt.plot([door_start[0], door_end[0]], [door_start[1], door_end[1]], 
+                        'r-', linewidth=2, label='Door' if i == 0 else "")
+                
+                # Add door ID at the projected center point
+                plt.text(projected_point[0], projected_point[1], f'D{i}', color='black', 
+                        ha='center', va='center', fontweight='bold', fontsize=12)
+                
+                # Print dimensions for debugging
+                print(f"\nDoor {i} dimensions:")
+                print(f"Width: {door_width:.2f} pixels")
+                print(f"Wall angle: {math.degrees(wall_angle):.2f} degrees")
+                print(f"Door orientation relative to wall: {math.degrees(angle_diff):.2f} degrees")
+            
+            # Draw original bbox with transparency for reference
+            if ratio <= 0.5 or ratio >= 2:  # This is likely a window
+                x1, y1 = bbox[0]
+                x2, y2 = bbox[2]
+                plt.fill([x1, x2, x2, x1, x1], [y1, y1, y2, y2, y1], 
+                        color='blue', alpha=0.3, label='Window' if i == 0 else "")
+    
+    plt.title('Floor Plan Visualization', fontsize=14)
+    plt.legend(fontsize=12)
+    plt.grid(True)
+    plt.axis('equal')
+    
+    # Save the plot with high resolution
+    output_path = os.path.join(script_dir, 'outputs', 'metadata_visualization.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()  # Close the figure to free memory
+    print(f"\nPlot saved as: {output_path}")
+
 if __name__ == "__main__":
-    test_floorplan_visualization() 
+    test_door_window_processing_with_visualization() 

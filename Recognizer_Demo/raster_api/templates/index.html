@@ -548,87 +548,61 @@
                 ctx.stroke();
             });
             
-            // Draw doors with improved styling and alignment
+            // Draw doors with simple lines directly on walls
             if (data.doors && data.doors.length > 0) {
-                data.doors.forEach(door => {
+                data.doors.forEach((door, index) => {
                     if (!door.position || door.position.length < 2) return;
                     
                     const [start, end] = door.position;
+                    
+                    // Draw door as simple white line
+                    ctx.strokeStyle = '#FFFFFF';  // White color for doors
+                    ctx.lineWidth = 3 / (scale * baseScale);
+                    ctx.beginPath();
+                    ctx.moveTo(start[0], start[1]);
+                    ctx.lineTo(end[0], end[1]);
+                    ctx.stroke();
+
+                    // Add door ID
                     const centerX = (start[0] + end[0]) / 2;
                     const centerY = (start[1] + end[1]) / 2;
-                    
-                    // Find nearest wall for alignment
-                    const nearestWall = findNearestWall([centerX, centerY], data.walls);
-                    if (!nearestWall) return;
-                    
-                    const wallStart = nearestWall.position[0];
-                    const wallEnd = nearestWall.position[1];
-                    const wallAngle = Math.atan2(wallEnd[1] - wallStart[1], wallEnd[0] - wallStart[0]);
-                    
-                    // Door dimensions
-                    const doorWidth = 40;
-                    const doorThickness = 8;
-                    
-                    ctx.save();
-                    ctx.translate(centerX, centerY);
-                    ctx.rotate(wallAngle);
-                    
-                    // Draw door frame
-                    ctx.strokeStyle = '#4682B4';
-                    ctx.lineWidth = 2 / (scale * baseScale);
-                    ctx.fillStyle = '#ADD8E6';
-                    ctx.fillRect(-doorWidth/2, -doorThickness/2, doorWidth, doorThickness);
-                    ctx.strokeRect(-doorWidth/2, -doorThickness/2, doorWidth, doorThickness);
-                    
-                    // Draw door swing arc
-                    ctx.beginPath();
-                    ctx.arc(0, 0, doorWidth/2, 0, Math.PI/2);
-                    ctx.stroke();
-                    
-                    ctx.restore();
+                    ctx.fillStyle = '#000000';
+                    ctx.font = `${12 / (scale * baseScale)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`D${index}`, centerX, centerY);
+
+                    // Draw light blue bbox background (like in metadata_visualization.png)
+                    const bboxWidth = 30;
+                    const bboxHeight = 40;
+                    ctx.fillStyle = 'rgba(200, 200, 255, 0.2)';  // Very light blue with transparency
+                    ctx.fillRect(centerX - bboxWidth/2, centerY - bboxHeight/2, bboxWidth, bboxHeight);
                 });
             }
             
-            // Draw windows with improved styling and alignment
+            // Draw windows with simple lines
             if (data.windows && data.windows.length > 0) {
-                data.windows.forEach(window => {
+                data.windows.forEach((window, index) => {
                     if (!window.position || window.position.length < 2) return;
                     
                     const [start, end] = window.position;
+                    
+                    // Draw window as simple blue line
+                    ctx.strokeStyle = '#0000FF';  // Blue color for windows
+                    ctx.lineWidth = 3 / (scale * baseScale);
+                    ctx.beginPath();
+                    ctx.moveTo(start[0], start[1]);
+                    ctx.lineTo(end[0], end[1]);
+                    ctx.stroke();
+
+                    // Add window ID
                     const centerX = (start[0] + end[0]) / 2;
                     const centerY = (start[1] + end[1]) / 2;
-                    
-                    // Find nearest wall for alignment
-                    const nearestWall = findNearestWall([centerX, centerY], data.walls);
-                    if (!nearestWall) return;
-                    
-                    const wallStart = nearestWall.position[0];
-                    const wallEnd = nearestWall.position[1];
-                    const wallAngle = Math.atan2(wallEnd[1] - wallStart[1], wallEnd[0] - wallStart[0]);
-                    
-                    // Window dimensions
-                    const windowWidth = 50;
-                    const windowThickness = 6;
-                    const lineSpacing = 8;
-                    
-                    ctx.save();
-                    ctx.translate(centerX, centerY);
-                    ctx.rotate(wallAngle);
-                    
-                    // Draw window frame
-                    ctx.strokeStyle = '#4682B4';
-                    ctx.lineWidth = 2 / (scale * baseScale);
-                    ctx.strokeRect(-windowWidth/2, -windowThickness/2, windowWidth, windowThickness);
-                    
-                    // Draw window lines
-                    ctx.beginPath();
-                    ctx.moveTo(-windowWidth/2, -lineSpacing/2);
-                    ctx.lineTo(windowWidth/2, -lineSpacing/2);
-                    ctx.moveTo(-windowWidth/2, lineSpacing/2);
-                    ctx.lineTo(windowWidth/2, lineSpacing/2);
-                    ctx.stroke();
-                    
-                    ctx.restore();
+                    ctx.fillStyle = '#000000';
+                    ctx.font = `${12 / (scale * baseScale)}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`W${index}`, centerX, centerY);
                 });
             }
             

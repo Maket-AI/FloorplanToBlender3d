@@ -35,9 +35,12 @@ API_HOST = "floor-plan-digitalization.p.rapidapi.com"
 API_URL = f"https://{API_HOST}/raster-to-vector-base64"
 
 # Configure upload folder
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+OUTPUT_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+if not os.path.exists(OUTPUT_FOLDER):
+    os.makedirs(OUTPUT_FOLDER)
 
 def process_floorplan(image_data):
     """Process floor plan image using the RapidAPI."""
@@ -120,8 +123,30 @@ def process_floorplan(image_data):
             else:
                 logger.debug(f"Doors structure: {type(result['doors'])}, count: {len(result['doors'])}")
                 
+            # Create a copy of the result without the base64 image data
+            result_to_save = result.copy()
+            if "image" in result_to_save:
+                del result_to_save["image"]
+            
+            # Save the result to a JSON file
+            output_file = os.path.join(OUTPUT_FOLDER, 'example_simple_result.json')
+            with open(output_file, 'w') as f:
+                json.dump(result_to_save, f, indent=2)
+            logger.debug(f"Saved API response to {output_file}")
+                
             # Process the results to make them ready for frontend rendering
-            return process_result_for_frontend(result)
+            processed_result = process_result_for_frontend(result)
+            
+            # Log the processed result structure for debugging
+            logger.debug(f"Processed doors: {len(processed_result.get('doors', []))}")
+            for i, door in enumerate(processed_result.get('doors', [])):
+                logger.debug(f"Door {i}: position={door.get('position')}, wallId={door.get('wallId')}, width={door.get('width')}")
+            
+            logger.debug(f"Processed windows: {len(processed_result.get('windows', []))}")
+            for i, window in enumerate(processed_result.get('windows', [])):
+                logger.debug(f"Window {i}: position={window.get('position')}, wallId={window.get('wallId')}, width={window.get('width')}")
+            
+            return processed_result
         elif response.status_code == 403:
             error_msg = "API access forbidden. Please check your API key."
             logger.error(error_msg)
@@ -158,8 +183,14 @@ def process():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        # Read and encode the image
-        image_data = base64.b64encode(file.read()).decode('utf-8')
+        # Save the uploaded file
+        filename = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(filename)
+        logger.debug(f"Saved uploaded file to {filename}")
+        
+        # Read the saved file and encode it
+        with open(filename, 'rb') as f:
+            image_data = base64.b64encode(f.read()).decode('utf-8')
         
         # Process the floor plan
         result = process_floorplan(image_data)
@@ -175,21 +206,17 @@ def process():
 
 @app.route('/api/floorplan-data')
 def get_floorplan_data():
-    # For now, return a sample data structure
-    # In a real application, this would fetch from a database or session
-    return jsonify({
-        "walls": [],
-        "doors": [],
-        "windows": []
-    })
+    # Try to load the most recent floor plan data from the output file
+    try:
+        output_file = os.path.join(OUTPUT_FOLDER, 'example_simple_result.json')
+        if os.path.exists(output_file):
+            with open(output_file, 'r') as f:
+                data = json.load(f)
+            return jsonify(data)
+        else:
+            return jsonify({'error': 'No floor plan data available'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Try different ports if the default is in use
-    port = 8080
-    while port < 8100:
-        try:
-            app.run(host='127.0.0.1', port=port, debug=True)
-            break
-        except OSError:
-            logger.warning(f"Port {port} is in use, trying next port")
-            port += 1 
+    app.run(host='0.0.0.0', port=3000, debug=True) 
