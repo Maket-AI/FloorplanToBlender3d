@@ -23,6 +23,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r Recognizer_Demo/raster_api/requirements.txt
         
+    - name: Create necessary directories
+      run: |
+        mkdir -p Recognizer_Demo/raster_api/.elasticbeanstalk/logs
+        touch Recognizer_Demo/raster_api/.elasticbeanstalk/logs/latest
+        
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
