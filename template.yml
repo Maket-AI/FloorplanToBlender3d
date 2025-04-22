@@ -6,6 +6,33 @@ Description: FloorplanToBlender3d Application
 Resources:
   FloorplanToBlender3dFunction:
     Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: python3.12
+      Exclude:
+        - "**/.elasticbeanstalk/**"
+        - "**/.git/**"
+        - "**/.github/**"
+        - "**/__pycache__/**"
+        - "**/*.pyc"
+        - "**/*.pyo"
+        - "**/*.pyd"
+        - "**/.Python"
+        - "**/env/**"
+        - "**/pip-log.txt"
+        - "**/pip-delete-this-directory.txt"
+        - "**/.tox/**"
+        - "**/.coverage"
+        - "**/.coverage.*"
+        - "**/.cache"
+        - "**/nosetests.xml"
+        - "**/coverage.xml"
+        - "**/*.cover"
+        - "**/*.log"
+        - "**/.pytest_cache/**"
+        - "**/.env"
+        - "**/.venv"
+        - "**/venv/**"
+        - "**/ENV/**"
     Properties:
       CodeUri: .
       Handler: main.lambda_handler
@@ -20,33 +47,6 @@ Resources:
           Properties:
             Path: /{proxy+}
             Method: ANY
-      Metadata:
-        BuildMethod: python3.12
-        Exclude:
-          - "**/.elasticbeanstalk/**"
-          - "**/.git/**"
-          - "**/.github/**"
-          - "**/__pycache__/**"
-          - "**/*.pyc"
-          - "**/*.pyo"
-          - "**/*.pyd"
-          - "**/.Python"
-          - "**/env/**"
-          - "**/pip-log.txt"
-          - "**/pip-delete-this-directory.txt"
-          - "**/.tox/**"
-          - "**/.coverage"
-          - "**/.coverage.*"
-          - "**/.cache"
-          - "**/nosetests.xml"
-          - "**/coverage.xml"
-          - "**/*.cover"
-          - "**/*.log"
-          - "**/.pytest_cache/**"
-          - "**/.env"
-          - "**/.venv"
-          - "**/venv/**"
-          - "**/ENV/**"
 
 Outputs:
   FloorplanToBlender3dApi:
