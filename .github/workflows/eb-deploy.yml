@@ -9,11 +9,16 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    container:
-      image: public.ecr.aws/sam/build-python3.9:latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
+    # Install the interpreter SAM needs
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        
+    - uses: aws-actions/setup-sam@v2
     
     - name: Install dependencies
       run: |
@@ -27,16 +32,11 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ca-central-1
         
-    - name: Create necessary directories
-      run: |
-        mkdir -p Recognizer_Demo/raster_api/.elasticbeanstalk/logs
-        touch Recognizer_Demo/raster_api/.elasticbeanstalk/logs/latest
+    - name: Test template
+      run: sam validate
         
-    - name: SAM build
-      run: |
-        python --version
-        sam --version
-        sam build
+    - name: Build application
+      run: sam build
         
     - name: Generate deployment package
       run: |
