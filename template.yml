@@ -3,11 +3,19 @@ Transform: AWS::Serverless-2016-10-31
 
 Description: FloorplanToBlender3d Application
 
+Globals:
+  Function:
+    Runtime: python3.9
+    Architectures:
+      - x86_64
+    MemorySize: 128
+    Timeout: 100
+
 Resources:
   FloorplanToBlender3dFunction:
     Type: AWS::Serverless::Function
     Metadata:
-      BuildMethod: python3.12
+      BuildMethod: python3.9
       Exclude:
         - "**/.elasticbeanstalk/**"
         - "**/.git/**"
@@ -34,13 +42,8 @@ Resources:
         - "**/venv/**"
         - "**/ENV/**"
     Properties:
-      CodeUri: .
-      Handler: main.lambda_handler
-      Runtime: python3.12
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 100
+      CodeUri: Recognizer_Demo/raster_api
+      Handler: app.lambda_handler
       Events:
         ApiEvent:
           Type: Api
