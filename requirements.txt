@@ -1,4 +1,4 @@
-opencv-python==4.2.0.34 
+opencv-python>=4.8.0
 numpy
 configparser==3.5.0
 future-fstrings==1.2.0
