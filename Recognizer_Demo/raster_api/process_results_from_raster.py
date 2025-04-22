@@ -4,6 +4,9 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from shapely.geometry import Point, LineString, Polygon
+from shapely.ops import nearest_points
+from shapely.affinity import rotate, translate
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -12,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ElementProcessor:
     """
     Main class for processing floorplan elements from API results.
-    Handles the conversion of raw API data to structured frontend-ready format.
+    Handles the conversion of raw API data to structured frontend-ready format using Shapely.
     """
     
     @staticmethod
@@ -23,6 +26,7 @@ class ElementProcessor:
         1. Detecting walls, rooms, doors, windows
         2. Processing doors/windows to align with walls
         3. Generating measurements
+        4. Creating a detailed visualization JSON for verification
         """
         processed_result = {}
         
@@ -40,34 +44,110 @@ class ElementProcessor:
         boundary = BoundaryCalculator.calculate_boundary(processed_result["walls"])
         processed_result["boundary"] = boundary
         
-        # Process doors and windows
-        door_window_processor = DoorWindowProcessor()
-        doors_and_windows = door_window_processor.process_doors_and_windows(
-            api_result.get("doors", []), 
-            processed_result["walls"]
-        )
+        # Get walls and doors from API result
+        walls = processed_result["walls"]
+        doors = api_result.get("doors", [])
         
-        # Ensure doors have the correct format with all calculation done on the backend
+        # Process doors and windows directly (similar to visualization function)
         processed_result["doors"] = []
-        for door in doors_and_windows["doors"]:
-            processed_result["doors"].append({
-                "position": door["points"],
-                "wallId": door["wallId"],
-                "wallAngle": door["wallAngle"],
-                "width": door["width"],
-                "thickness": door["thickness"]
-            })
-        
-        # Ensure windows have the correct format with all calculation done on the backend
         processed_result["windows"] = []
-        for window in doors_and_windows["windows"]:
-            processed_result["windows"].append({
-                "position": window["points"],
-                "wallId": window["wallId"],
-                "wallAngle": window["wallAngle"],
-                "width": window["width"],
-                "lineSpacing": window["lineSpacing"]
-            })
+        processed_result["original_bboxes"] = []  # Store original bounding boxes for verification
+        
+        # Save detailed door/window info for debugging
+        detailed_data = {
+            "walls": walls,
+            "original_doors": doors,
+            "processed_doors": [],
+            "processed_windows": []
+        }
+        
+        for i, door in enumerate(doors):
+            bbox = door.get("bbox", [])
+            if bbox and len(bbox) >= 4:
+                # Store original bbox for verification
+                processed_result["original_bboxes"].append({
+                    "points": bbox,
+                    "id": i
+                })
+                
+                # Create Shapely objects for calculations
+                bbox_polygon = Polygon(bbox)
+                center_point = Point(bbox_polygon.centroid)
+                
+                # Calculate dimensions
+                width = bbox[2][0] - bbox[0][0]
+                height = bbox[2][1] - bbox[0][1]
+                ratio = width / height
+                
+                # Find nearest wall
+                nearest_wall = GeometryHelper.find_nearest_wall([center_point.x, center_point.y], walls)
+                
+                if nearest_wall:
+                    wall_p1, wall_p2 = nearest_wall["position"]
+                    wall_line = LineString([wall_p1, wall_p2])
+                    wall_angle = math.atan2(wall_p2[1] - wall_p1[1], wall_p2[0] - wall_p1[0])
+                    
+                    # Project center point onto wall
+                    projected_point = GeometryHelper.find_wall_intersection([center_point.x, center_point.y], nearest_wall)
+                    
+                    # Determine door width based on orientation relative to wall
+                    wall_direction = math.atan2(wall_p2[1] - wall_p1[1], wall_p2[0] - wall_p1[0])
+                    bbox_direction = math.atan2(bbox[2][1] - bbox[0][1], bbox[2][0] - bbox[0][0])
+                    angle_diff = abs(wall_direction - bbox_direction) % math.pi
+                    
+                    # Use width or height based on alignment with wall
+                    if angle_diff < math.pi/4 or angle_diff > 3*math.pi/4:
+                        door_width = width
+                    else:
+                        door_width = height
+                    
+                    # Ensure minimum door width
+                    door_width = max(door_width, 30)
+                    half_width = door_width / 2
+                    
+                    # Calculate door endpoints along the wall using wall unit vector
+                    wall_vector = [wall_p2[0] - wall_p1[0], wall_p2[1] - wall_p1[1]]
+                    wall_length = wall_line.length
+                    wall_unit_vector = [wall_vector[0]/wall_length, wall_vector[1]/wall_length]
+                    
+                    door_start = [
+                        projected_point[0] - half_width * wall_unit_vector[0],
+                        projected_point[1] - half_width * wall_unit_vector[1]
+                    ]
+                    door_end = [
+                        projected_point[0] + half_width * wall_unit_vector[0],
+                        projected_point[1] + half_width * wall_unit_vector[1]
+                    ]
+                    
+                    # Check if this is a door or window based on aspect ratio
+                    is_door = 0.5 <= ratio <= 2.0
+                    
+                    if is_door:
+                        # This is a door
+                        processed_door = {
+                            "position": [door_start, door_end],
+                            "wallId": walls.index(nearest_wall),
+                            "wallAngle": wall_angle,
+                            "width": door_width,
+                            "thickness": 6,  # Default door thickness
+                            "id": i,
+                            "type": "door"
+                        }
+                        processed_result["doors"].append(processed_door)
+                        detailed_data["processed_doors"].append(processed_door)
+                    else:
+                        # This is a window
+                        processed_window = {
+                            "position": [door_start, door_end],
+                            "wallId": walls.index(nearest_wall),
+                            "wallAngle": wall_angle,
+                            "width": door_width,
+                            "lineSpacing": 4,  # Default window line spacing
+                            "id": i,
+                            "type": "window"
+                        }
+                        processed_result["windows"].append(processed_window)
+                        detailed_data["processed_windows"].append(processed_window)
         
         # Generate measurements
         processed_result["measurements"] = MeasurementGenerator.generate_measurements(boundary)
@@ -75,42 +155,58 @@ class ElementProcessor:
         # Save the processed data to a JSON file for inspection
         script_dir = os.path.dirname(os.path.abspath(__file__))
         output_path = os.path.join(script_dir, 'outputs', 'processed_elements.json')
+        detailed_path = os.path.join(script_dir, 'outputs', 'detailed_processing.json')
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        # Save the frontend-ready result
         with open(output_path, 'w') as f:
             json.dump(processed_result, f, indent=2)
         print(f"\nProcessed data saved to: {output_path}")
         
+        # Save detailed processing data for debugging
+        with open(detailed_path, 'w') as f:
+            json.dump(detailed_data, f, indent=2)
+        print(f"Detailed processing data saved to: {detailed_path}")
+        
         return processed_result
 
 class BoundaryCalculator:
-    """Class to handle boundary calculations for the floor plan."""
+    """Class to handle boundary calculations for the floor plan using Shapely."""
     
     @staticmethod
     def calculate_boundary(walls):
-        """Calculate the boundary (min/max x,y coordinates) from walls."""
+        """Calculate the boundary (min/max x,y coordinates) from walls using Shapely."""
         if not walls:
             return {"minX": 0, "minY": 0, "maxX": 0, "maxY": 0, "width": 0, "height": 0}
         
-        minX = float('inf')
-        minY = float('inf')
-        maxX = float('-inf')
-        maxY = float('-inf')
-        
+        # Create a MultiLineString from all walls
+        wall_lines = []
         for wall in walls:
-            points = wall["position"]
-            for point in points:
-                minX = min(minX, point[0])
-                minY = min(minY, point[1])
-                maxX = max(maxX, point[0])
-                maxY = max(maxY, point[1])
+            if "position" in wall and len(wall["position"]) >= 2:
+                p1, p2 = wall["position"]
+                wall_lines.append(LineString([p1, p2]))
+        
+        if not wall_lines:
+            return {"minX": 0, "minY": 0, "maxX": 0, "maxY": 0, "width": 0, "height": 0}
+        
+        # Get the bounds of all walls
+        bounds = wall_lines[0].bounds
+        for line in wall_lines[1:]:
+            line_bounds = line.bounds
+            bounds = (
+                min(bounds[0], line_bounds[0]),  # minX
+                min(bounds[1], line_bounds[1]),  # minY
+                max(bounds[2], line_bounds[2]),  # maxX
+                max(bounds[3], line_bounds[3])   # maxY
+            )
         
         return {
-            "minX": minX,
-            "minY": minY,
-            "maxX": maxX,
-            "maxY": maxY,
-            "width": maxX - minX,
-            "height": maxY - minY
+            "minX": bounds[0],
+            "minY": bounds[1],
+            "maxX": bounds[2],
+            "maxY": bounds[3],
+            "width": bounds[2] - bounds[0],
+            "height": bounds[3] - bounds[1]
         }
 
 class MeasurementGenerator:
@@ -258,14 +354,15 @@ class DoorWindowProcessor:
         }
 
 class GeometryHelper:
-    """Utility class for geometric calculations and transformations."""
+    """Utility class for geometric calculations and transformations using Shapely."""
     
     @staticmethod
     def find_nearest_wall(point, walls):
-        """Find the wall closest to a given point."""
+        """Find the wall closest to a given point using Shapely."""
         if not walls:
             return None
             
+        point_obj = Point(point)
         nearest_wall = None
         min_dist = float('inf')
         
@@ -274,7 +371,8 @@ class GeometryHelper:
                 continue
                 
             p1, p2 = wall["position"]
-            dist = GeometryHelper.point_to_line_distance(point, p1, p2)
+            wall_line = LineString([p1, p2])
+            dist = point_obj.distance(wall_line)
             
             if dist < min_dist:
                 min_dist = dist
@@ -284,123 +382,94 @@ class GeometryHelper:
     
     @staticmethod
     def point_to_line_distance(point, line_start, line_end):
-        """Calculate the shortest distance from a point to a line segment."""
-        A = point[0] - line_start[0]
-        B = point[1] - line_start[1]
-        C = line_end[0] - line_start[0]
-        D = line_end[1] - line_start[1]
-        
-        dot = A * C + B * D
-        len_sq = C * C + D * D
-        param = -1
-        
-        if len_sq != 0:
-            param = dot / len_sq
-        
-        if param < 0:
-            xx = line_start[0]
-            yy = line_start[1]
-        elif param > 1:
-            xx = line_end[0]
-            yy = line_end[1]
-        else:
-            xx = line_start[0] + param * C
-            yy = line_start[1] + param * D
-        
-        dx = point[0] - xx
-        dy = point[1] - yy
-        
-        return math.sqrt(dx * dx + dy * dy)
+        """Calculate the shortest distance from a point to a line segment using Shapely."""
+        point_obj = Point(point)
+        line = LineString([line_start, line_end])
+        return point_obj.distance(line)
     
     @staticmethod
     def align_to_wall(bbox, wall):
-        """Align a door/window to a wall by adjusting its orientation."""
+        """Align a door/window to a wall by adjusting its orientation using Shapely."""
         if "position" not in wall or len(wall["position"]) < 2:
             return [[bbox[0][0], bbox[0][1]], [bbox[2][0], bbox[2][1]]]
             
         p1, p2 = wall["position"]
-        angle = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+        wall_line = LineString([p1, p2])
+        wall_angle = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
         
-        length = math.sqrt(
-            (bbox[2][0] - bbox[0][0])**2 + 
-            (bbox[2][1] - bbox[0][1])**2
-        )
+        # Create a line from bbox corners
+        bbox_line = LineString([bbox[0], bbox[2]])
+        length = bbox_line.length
         
         # Calculate center point of bbox
-        center_x = (bbox[0][0] + bbox[2][0]) / 2
-        center_y = (bbox[0][1] + bbox[2][1]) / 2
+        center = Point((bbox[0][0] + bbox[2][0]) / 2, (bbox[0][1] + bbox[2][1]) / 2)
         
-        # Calculate new endpoints based on wall angle
+        # Create a new line centered at the bbox center
         half_length = length / 2
-        start_x = center_x - half_length * math.cos(angle)
-        start_y = center_y - half_length * math.sin(angle)
-        end_x = center_x + half_length * math.cos(angle)
-        end_y = center_y + half_length * math.sin(angle)
+        start_x = center.x - half_length * math.cos(wall_angle)
+        start_y = center.y - half_length * math.sin(wall_angle)
+        end_x = center.x + half_length * math.cos(wall_angle)
+        end_y = center.y + half_length * math.sin(wall_angle)
         
         return [[start_x, start_y], [end_x, end_y]]
     
     @staticmethod
     def find_wall_intersection(point, wall):
-        """Find the intersection point between a point and a wall."""
+        """Find the intersection point between a point and a wall using Shapely."""
         if "position" not in wall or len(wall["position"]) < 2:
             return point
             
+        point_obj = Point(point)
         p1, p2 = wall["position"]
-        wall_angle = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+        wall_line = LineString([p1, p2])
         
-        # Calculate perpendicular distance
-        dist = GeometryHelper.point_to_line_distance(point, p1, p2)
-        
-        # Calculate intersection point
-        intersection_x = point[0] - dist * math.cos(wall_angle + math.pi/2)
-        intersection_y = point[1] - dist * math.sin(wall_angle + math.pi/2)
-        
-        return [intersection_x, intersection_y]
+        # Get the nearest point on the wall line
+        nearest_point = nearest_points(point_obj, wall_line)[1]
+        return [nearest_point.x, nearest_point.y]
     
     @staticmethod
     def distance(p1, p2):
-        """Calculate Euclidean distance between two points."""
-        return math.sqrt((p2[0] - p1[0])**2 + (p2[1] - p1[1])**2)
+        """Calculate Euclidean distance between two points using Shapely."""
+        return Point(p1).distance(Point(p2))
     
     @staticmethod
     def mid_point(points):
-        """Calculate the midpoint between two points."""
-        p1, p2 = points
-        return [(p1[0] + p2[0])/2, (p1[1] + p2[1])/2]
+        """Calculate the midpoint between two points using Shapely."""
+        line = LineString(points)
+        return [line.centroid.x, line.centroid.y]
 
 class DoorDetector:
-    """Class for detecting potential doors from walls."""
+    """Class for detecting potential doors from walls using Shapely."""
     
     @staticmethod
     def find_potential_doors(walls):
-        """Generate potential doors based on walls."""
+        """Generate potential doors based on walls using Shapely."""
         if not walls or len(walls) < 2:
             return []
             
         doors = []
         for i, wall1 in enumerate(walls):
             for j, wall2 in enumerate(walls[i+1:], i+1):
-                # Find walls that are close to each other but not connected
-                p1 = wall1["position"][0]
-                p2 = wall1["position"][1]
-                p3 = wall2["position"][0]
-                p4 = wall2["position"][1]
+                # Create Shapely LineString objects for the walls
+                p1, p2 = wall1["position"]
+                p3, p4 = wall2["position"]
+                line1 = LineString([p1, p2])
+                line2 = LineString([p3, p4])
                 
                 # Check if walls are parallel and close
-                # This is a simple heuristic and can be improved
-                if DoorDetector.is_parallel(p1, p2, p3, p4) and DoorDetector.is_close(p1, p2, p3, p4, threshold=50):
+                if DoorDetector.is_parallel(line1, line2) and DoorDetector.is_close(line1, line2, threshold=50):
                     # Create a door between these walls
-                    door_center = GeometryHelper.mid_point(DoorDetector.closest_points(p1, p2, p3, p4))
+                    door_center = nearest_points(line1, line2)[0]
                     width = 40  # Typical door width
                     height = 10  # Thickness
                     
                     # Create door bbox
                     door = {
                         "bbox": [
-                            [door_center[0] - width/2, door_center[1] - height/2],
-                            [door_center[0] + width/2, door_center[1] - height/2],
-                            [door_center[0] + width/2, door_center[1] + height/2],
-                            [door_center[0] - width/2, door_center[1] + height/2]
+                            [door_center.x - width/2, door_center.y - height/2],
+                            [door_center.x + width/2, door_center.y - height/2],
+                            [door_center.x + width/2, door_center.y + height/2],
+                            [door_center.x - width/2, door_center.y + height/2]
                         ]
                     }
                     doors.append(door)
@@ -408,43 +477,27 @@ class DoorDetector:
         return doors[:5]  # Limit to 5 doors for testing
     
     @staticmethod
-    def is_parallel(p1, p2, p3, p4, threshold=0.2):
-        """Check if two line segments are roughly parallel."""
-        vec1 = [p2[0] - p1[0], p2[1] - p1[1]]
-        vec2 = [p4[0] - p3[0], p4[1] - p3[1]]
+    def is_parallel(line1, line2, threshold=0.2):
+        """Check if two line segments are roughly parallel using Shapely."""
+        # Get the angles of both lines
+        angle1 = math.atan2(line1.coords[1][1] - line1.coords[0][1],
+                           line1.coords[1][0] - line1.coords[0][0])
+        angle2 = math.atan2(line2.coords[1][1] - line2.coords[0][1],
+                           line2.coords[1][0] - line2.coords[0][0])
         
-        len1 = (vec1[0]**2 + vec1[1]**2)**0.5
-        len2 = (vec2[0]**2 + vec2[1]**2)**0.5
-        
-        if len1 == 0 or len2 == 0:
-            return False
-            
-        # Normalize
-        vec1 = [vec1[0]/len1, vec1[1]/len1]
-        vec2 = [vec2[0]/len2, vec2[1]/len2]
-        
-        # Dot product should be close to 1 or -1
-        dot = abs(vec1[0]*vec2[0] + vec1[1]*vec2[1])
-        return abs(dot - 1.0) < threshold
+        # Calculate the angle difference
+        angle_diff = abs(angle1 - angle2) % math.pi
+        return angle_diff < threshold or abs(angle_diff - math.pi) < threshold
     
     @staticmethod
-    def is_close(p1, p2, p3, p4, threshold=50):
-        """Check if two line segments are close to each other."""
-        dist1 = min(GeometryHelper.distance(p1, p3), GeometryHelper.distance(p1, p4))
-        dist2 = min(GeometryHelper.distance(p2, p3), GeometryHelper.distance(p2, p4))
-        return dist1 < threshold or dist2 < threshold
+    def is_close(line1, line2, threshold=50):
+        """Check if two line segments are close to each other using Shapely."""
+        return line1.distance(line2) < threshold
     
     @staticmethod
-    def closest_points(p1, p2, p3, p4):
-        """Find the closest points between two line segments."""
-        distances = [
-            (GeometryHelper.distance(p1, p3), p1, p3),
-            (GeometryHelper.distance(p1, p4), p1, p4),
-            (GeometryHelper.distance(p2, p3), p2, p3),
-            (GeometryHelper.distance(p2, p4), p2, p4)
-        ]
-        min_dist, pa, pb = min(distances, key=lambda x: x[0])
-        return (pa, pb)
+    def closest_points(line1, line2):
+        """Find the closest points between two line segments using Shapely."""
+        return nearest_points(line1, line2)
 
 class Visualizer:
     """Class for visualizing floor plan elements."""

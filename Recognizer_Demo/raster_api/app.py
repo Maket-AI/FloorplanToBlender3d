@@ -15,8 +15,11 @@ import socket
 
 # Import the processing functions from the new module
 from process_results_from_raster import (
-    process_result_for_frontend,
-    find_potential_doors
+    ElementProcessor,
+    DoorDetector,
+    BoundaryCalculator,
+    GeometryHelper,
+    MeasurementGenerator
 )
 
 # Configure logging
@@ -41,6 +44,9 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
+
+# Use DoorDetector's static method for find_potential_doors
+find_potential_doors = DoorDetector.find_potential_doors
 
 def process_floorplan(image_data):
     """Process floor plan image using the RapidAPI."""
@@ -135,7 +141,7 @@ def process_floorplan(image_data):
             logger.debug(f"Saved API response to {output_file}")
                 
             # Process the results to make them ready for frontend rendering
-            processed_result = process_result_for_frontend(result)
+            processed_result = ElementProcessor.process_result_for_frontend(result)
             
             # Log the processed result structure for debugging
             logger.debug(f"Processed doors: {len(processed_result.get('doors', []))}")
@@ -219,4 +225,4 @@ def get_floorplan_data():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000, debug=True) 
+    app.run(host='0.0.0.0', port=8080, debug=True) 
