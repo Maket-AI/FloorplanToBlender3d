@@ -32,15 +32,18 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ca-central-1
         
-    - name: Create necessary directories
+    - name: Create necessary directories and files
       run: |
         cd Recognizer_Demo/raster_api
         mkdir -p .elasticbeanstalk/logs
+        touch .elasticbeanstalk/logs/latest
+        mkdir -p outputs
+        mkdir -p uploads
         
     - name: Build SAM application
       run: |
         cd Recognizer_Demo/raster_api
-        sam build
+        sam build --debug
         
     - name: Generate deployment package
       run: |

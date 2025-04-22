@@ -42,7 +42,6 @@ Resources:
         - "**/venv/**"
         - "**/ENV/**"
     Properties:
-      CodeUri: Recognizer_Demo/raster_api
       Handler: app.lambda_handler
       Events:
         ApiEvent:
