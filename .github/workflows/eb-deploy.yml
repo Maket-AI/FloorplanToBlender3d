@@ -18,12 +18,11 @@ jobs:
       with:
         python-version: '3.9'
         
-    - uses: aws-actions/setup-sam@v2
-    
     - name: Install dependencies
       run: |
+        cd Recognizer_Demo/raster_api
         python -m pip install --upgrade pip
-        pip install -r Recognizer_Demo/raster_api/requirements.txt
+        pip install -r requirements.txt
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -31,17 +30,6 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ca-central-1
-        
-    - name: Create necessary directories
-      run: |
-        mkdir -p Recognizer_Demo/raster_api/.elasticbeanstalk/logs
-        touch Recognizer_Demo/raster_api/.elasticbeanstalk/logs/latest
-        
-    - name: Test template
-      run: sam validate
-        
-    - name: Build application
-      run: sam build
         
     - name: Generate deployment package
       run: |
